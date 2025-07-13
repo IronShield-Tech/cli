@@ -1,5 +1,6 @@
 mod config;
 mod client;
+mod util;
 
 use color_eyre::Result;
 use crossterm::event::{Event, EventStream, KeyCode, KeyEvent, KeyEventKind, KeyModifiers};

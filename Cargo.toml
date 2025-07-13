@@ -7,10 +7,13 @@ license = "Apache-2.0"
 edition = "2024"
 
 [dependencies]
-ironshield-api = "0.1.37"
+ironshield-api = "0.1"
+ironshield-core = "0.1"
+ironshield-types = "0.1"
 color-eyre = "0.6.3"
 crossterm = { version = "0.28.1", features = ["event-stream"] }
 futures = "0.3.31"
 ratatui = "0.29.0"
 tokio = { version = "1.40.0", features = ["full"] }
-reqwest = "0.12.22"
+reqwest = { version = "0.12.22", features = ["json"] }
+serde_json = "1.0.140"
