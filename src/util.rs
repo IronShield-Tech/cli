@@ -44,6 +44,11 @@ macro_rules! verbose_print {
 /// ```
 #[macro_export]
 macro_rules! verbose_log {
+    ($config:expr, compute, $($arg:tt)*) => {
+        if $config.verbose {
+            println!("COMPUTE: {}", format_args!($($arg)*));
+        }
+    };
     ($config:expr, error, $($arg:tt)*) => {
         if $config.verbose {
             println!("ERROR: {}", format_args!($($arg)*));
@@ -54,9 +59,19 @@ macro_rules! verbose_log {
             println!("INFO: {}", format_args!($($arg)*));
         }
     };
+    ($config:expr, receive, $($arg:tt)*) => {
+        if $config.verbose {
+            println!("RECEIVE: {}", format_args!($($arg)*));
+        }
+    };
     ($config:expr, success, $($arg:tt)*) => {
         if $config.verbose {
             println!("SUCCESS: {}", format_args!($($arg)*));
+        }
+    };
+    ($config:expr, submit, $($arg:tt)*) => {
+        if $config.verbose {
+            println!("SUBMIT: {}", format_args!($($arg)*));
         }
     };
     ($config:expr, network, $($arg:tt)*) => {
@@ -67,6 +82,11 @@ macro_rules! verbose_log {
     ($config:expr, timing, $($arg:tt)*) => {
         if $config.verbose {
             println!("TIMING: {}", format_args!($($arg)*));
+        }
+    };
+    ($config:expr, warning, $($arg:tt)*) => {
+        if $config.verbose {
+            println!("WARNING: {}", format_args!($($arg)*));
         }
     };
 }
@@ -83,7 +103,7 @@ macro_rules! verbose_log {
 macro_rules! verbose_kv {
     ($config:expr, $key:expr, $value:expr) => {
         if $config.verbose {
-            println!("   {}: {}", $key, $value);
+            println!("{}: {}", $key, $value);
         }
     };
 }
@@ -100,7 +120,7 @@ macro_rules! verbose_section {
     ($config:expr, $($arg:tt)*) => {
         if $config.verbose {
             println!("\n🔸 {}", format_args!($($arg)*));
-            println!("   {}", "─".repeat(40));
+            println!("{}", "─".repeat(40));
         }
     };
 }

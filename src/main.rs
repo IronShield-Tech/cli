@@ -1,6 +1,7 @@
 mod config;
 mod client;
 mod util;
+mod error;
 
 use color_eyre::Result;
 use crossterm::event::{Event, EventStream, KeyCode, KeyEvent, KeyEventKind, KeyModifiers};
@@ -11,6 +12,9 @@ use ratatui::{
     text::Line,
     widgets::{Block, Paragraph},
 };
+use clap::{Parser, Subcommand};
+use crate::client::IronShieldClient;
+use crate::error::CliError;
 
 #[tokio::main]
 async fn main() -> Result<()> {
@@ -20,6 +24,40 @@ async fn main() -> Result<()> {
     ratatui::restore();
     result
 }
+
+#[derive(Parser)]
+#[command(name = "ironshield")]
+#[command(about = "IronShield CLI = Solve proof-of-work challenges")]
+#[command(version)]
+pub struct CliArgs {
+    #[arg(short, long, default_value = "ironshield.toml")]
+    pub config_path: String,
+    #[arg(short, long)]
+    pub verbose: bool,
+    #[command(subcommand)]
+    pub command: Commands,
+}
+
+#[derive(Subcommand)]
+pub enum Commands {
+    Solve {
+
+    },
+    Test {
+
+    },
+}
+
+impl CliArgs {
+    /// Parse command line arguments and return the structured CLI arguments.
+    pub fn parse() -> Result<Self, CliError> {
+        Ok(Self::parse()?)
+    }
+}
+
+//pub async fn execute_cmd(arg: CliArgs, client: IronShieldClient) -> Result<(), CliError> {
+//    // TODO: stuff
+//}
 
 #[derive(Debug, Default)]
 pub struct App {
