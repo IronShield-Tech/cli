@@ -22,6 +22,19 @@ pub struct IronShieldClient {
 }
 
 impl IronShieldClient {
+    /// Creates a new IronShield client with the provided configuration.
+    ///
+    /// # Arguments
+    /// * `config`: The client configuration.
+    ///
+    /// # Return
+    /// * `ResultHandler<Self>`: The initialized client or an error.
+    ///
+    /// # Example
+    /// ```
+    /// let config = ClientConfig::from_file("ironshield.toml")?;
+    /// let client = IronShieldClient::new(config)?;
+    /// ```
     pub fn new(config: ClientConfig) -> ResultHandler<Self> {
         crate::verbose_section!(config, "Client Initialization");
 
@@ -85,6 +98,15 @@ impl IronShieldClient {
         api_response.extract_challenge()
     }
 
+    /// Makes a standardized API request to the IronShield API service.
+    ///
+    /// # Arguments
+    /// * `request`: The request payload to send to the API.
+    ///
+    /// # Returns
+    /// * `ResultHandler<serde_json::Value>`: The parsed JSON response
+    ///                                       or an error if the
+    ///                                       request fails.
     async fn make_api_request(
         &self,
         request: &IronShieldRequest
