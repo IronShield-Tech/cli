@@ -2,9 +2,16 @@ mod config;
 mod client;
 mod util;
 mod error;
+mod response;
+mod http_builder;
+mod constant;
+
+use crate::client::IronShieldClient;
+use crate::error::CliError;
+use crate::config::ClientConfig;
 
 use color_eyre::Result;
-use crossterm::event::{Event, EventStream, KeyCode, KeyEvent, KeyEventKind, KeyModifiers};
+use crossterm::event::{Event, EventStream, KeyCode, KeyEventKind, KeyModifiers};
 use futures::{FutureExt, StreamExt};
 use ratatui::{
     DefaultTerminal, Frame,
@@ -13,9 +20,6 @@ use ratatui::{
     widgets::{Block, Paragraph},
 };
 use clap::{Parser, Subcommand};
-use crate::client::IronShieldClient;
-use crate::error::CliError;
-use crate::config::ClientConfig;
 
 #[tokio::main]
 async fn main() -> Result<()> {
@@ -32,128 +36,55 @@ async fn main() -> Result<()> {
 
     // Execute the command based on CLI arguments.
     match args.command {
-        Commands::Fetch { endpoint } => {
-            execute_fetch_command(client, &endpoint).await?;
-        }
-        Commands::Solve { endpoint } => {
-            execute_solve_command(client, &endpoint).await?;
-        }
-        Commands::Test => {
-            execute_test_command().await?;
-        }
-        Commands::Tui => {
-            // Run the TUI interface.
-            let terminal = ratatui::init();
-            let result = App::new().run(terminal).await;
-            ratatui::restore();
-            result?;
-        }
-    }
+        Commands::Fetch { endpoint } => client.fetch_challenge(&endpoint).await?,
+    };
 
     Ok(())
 }
 
 #[derive(Parser)]
-#[command(name = "ironshield")]
-#[command(about = "IronShield CLI - Solve proof-of-work challenges")]
-#[command(version)]
+#[command(name = "ironshield", about = "IronShield CLI - Solve proof-of-work challenges", version)]
 pub struct CliArgs {
     #[arg(short, long, default_value = "ironshield.toml")]
     pub config_path: String,
 
-    #[arg(short, long)]
-    pub verbose: bool,
-
     #[command(subcommand)]
     pub command: Commands,
 }
-
 #[derive(Subcommand)]
 pub enum Commands {
-    /// Fetch a challenge from the specified endpoint and print it to stdout.
+    // Descriptions for CLI arguments are
+    // denoted by adding a triple '/' (///)
+    // above the enum variant.
+    //
+    // Example:
+    //
+    // enum Example {
+    //     /// Command does this and that.
+    //     Command { /* whatever it's fetching */ }
+    // }
+    /// Fetches an IronShield request as an object.
     Fetch {
-        /// The endpoint URL to fetch a challenge for.
         #[arg(short, long)]
         endpoint: String,
     },
-    /// Solve a challenge for the specified endpoint.
-    Solve {
-        /// The endpoint URL to solve a challenge for.
-        #[arg(short, long)]
-        endpoint: String,
-    },
-    /// Run test operations.
-    Test,
-    /// Launch the TUI interface (default behavior).
-    Tui,
+//    /// Solve a challenge for the specified endpoint.
+//    Solve {
+//        /// The endpoint URL to solve a challenge for.
+//        #[arg(short, long)]
+//        endpoint: String,
+//    },
+//    /// Run test operations.
+//    Test,
+//    /// Launch the TUI interface (default behavior).
+//    Tui,
 }
 
 impl CliArgs {
     /// Parse command line arguments and return the structured CLI arguments.
     pub fn parse() -> Result<Self, CliError> {
-        Ok(clap::Parser::parse())
+        Ok(Parser::parse())
     }
-}
-
-/// Execute the fetch command to retrieve and print a challenge.
-async fn execute_fetch_command(client: IronShieldClient, endpoint: &str) -> Result<(), CliError> {
-    println!("Fetching challenge for endpoint: {}", endpoint);
-
-    match client.fetch_challenge(endpoint).await {
-        Ok(challenge) => {
-            println!("\n🔸 Challenge Details");
-            println!("{}", "─".repeat(50));
-            println!("Website ID: {}", challenge.website_id);
-            println!("Difficulty: {}", challenge.recommended_attempts);
-            println!("Expiry: {}", challenge.expiration_time);
-
-            // Print the challenge in JSON format for easy parsing.
-            println!("\n🔸 Raw Challenge JSON");
-            println!("{}", "─".repeat(50));
-            match serde_json::to_string_pretty(&challenge) {
-                Ok(json) => println!("{}", json),
-                Err(e) => println!("Failed to serialize challenge to JSON: {}", e),
-            }
-        }
-        Err(e) => {
-            eprintln!("❌ Failed to fetch challenge: {}", e);
-            return Err(CliError::RequestFailed(format!("Challenge fetch failed: {}", e)));
-        }
-    }
-
-    Ok(())
-}
-
-/// Execute the solve command to fetch and solve a challenge.
-async fn execute_solve_command(client: IronShieldClient, endpoint: &str) -> Result<(), CliError> {
-    println!("Solving challenge for endpoint: {}", endpoint);
-
-    match client.fetch_and_solve(endpoint).await {
-        Ok(solution) => {
-            println!("\n🔸 Solution Details");
-            println!("{}", "─".repeat(50));
-            println!("Nonce: {}", solution.solution);
-
-            // Print the solution in JSON format.
-            println!("\n🔸 Raw Solution JSON");
-            println!("{}", "─".repeat(50));
-            match serde_json::to_string_pretty(&solution) {
-                Ok(json) => println!("{}", json),
-                Err(e) => println!("Failed to serialize solution to JSON: {}", e),
-            }
-
-            // Print the base64url encoded response header.
-            println!("\n🔸 Encoded Response Header");
-            println!("{}", "─".repeat(50));
-            println!("{}", solution.to_base64url_header());
-        }
-        Err(e) => {
-            eprintln!("❌ Failed to solve challenge: {}", e);
-            return Err(CliError::RequestFailed(format!("Challenge solving failed: {}", e)));
-        }
-    }
-
-    Ok(())
 }
 
 /// Execute test operations.
