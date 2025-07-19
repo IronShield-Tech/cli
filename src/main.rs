@@ -11,27 +11,36 @@ use crate::error::CliError;
 use crate::config::ClientConfig;
 
 use color_eyre::Result;
-use crossterm::event::{Event, EventStream, KeyCode, KeyEventKind, KeyModifiers};
-use futures::{FutureExt, StreamExt};
+use crossterm::event::{
+    Event,
+    EventStream,
+    KeyCode,
+    KeyEventKind,
+    KeyModifiers
+};
+use futures::{
+    FutureExt,
+    StreamExt
+};
 use ratatui::{
     DefaultTerminal, Frame,
     style::Stylize,
     text::Line,
     widgets::{Block, Paragraph},
 };
-use clap::{Parser, Subcommand};
+use clap::{
+    Parser,
+    Subcommand
+};
 
 #[tokio::main]
 async fn main() -> Result<()> {
     color_eyre::install()?;
 
-    // Parse command line arguments.
     let args = CliArgs::parse()?;
 
-    // Load configuration from file.
     let config = ClientConfig::from_file(&args.config_path)?;
 
-    // Create client.
     let client = IronShieldClient::new(config)?;
 
     // Execute the command based on CLI arguments.
@@ -43,9 +52,21 @@ async fn main() -> Result<()> {
 }
 
 #[derive(Parser)]
-#[command(name = "ironshield", about = "IronShield CLI - Solve proof-of-work challenges", version)]
+#[command(
+    name = "ironshield",
+    about = "IronShield CLI - Fetch and solve proof-of-work challenges",
+    version,
+    long_about = "A command-line interface for interacting with IronShield proof-of-work \
+                  challenge systems. Supports fetching challenges, solving them, and \
+                  verifying solutions for protected endpoints."
+)]
 pub struct CliArgs {
-    #[arg(short, long, default_value = "ironshield.toml")]
+    #[arg(
+        short,
+        long,
+        default_value = "ironshield.toml",
+        help = "Path to the configuration file."
+    )]
     pub config_path: String,
 
     #[command(subcommand)]
@@ -53,6 +74,7 @@ pub struct CliArgs {
 }
 #[derive(Subcommand)]
 pub enum Commands {
+
     // Descriptions for CLI arguments are
     // denoted by adding a triple '/' (///)
     // above the enum variant.
@@ -63,9 +85,14 @@ pub enum Commands {
     //     /// Command does this and that.
     //     Command { /* whatever it's fetching */ }
     // }
+
     /// Fetches an IronShield request as an object.
     Fetch {
-        #[arg(short, long)]
+        #[arg(
+            short,
+            long,
+            help = "The protected endpoint URL to request a challenge for."
+        )]
         endpoint: String,
     },
 //    /// Solve a challenge for the specified endpoint.
