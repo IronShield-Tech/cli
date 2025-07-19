@@ -117,7 +117,7 @@ impl CliArgs {
 #[derive(Debug, Default)]
 pub struct App {
     /// Is the application running?
-    running: bool,
+    running:      bool,
     /// Event stream for handling terminal events.
     event_stream: EventStream,
 }

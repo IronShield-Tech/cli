@@ -11,7 +11,6 @@ use ironshield_types::{
 };
 
 use crate::config::ClientConfig;
-use crate::{verbose_log, verbose_section};
 use crate::http_builder::HttpClientBuilder;
 use crate::response::ApiResponse;
 
@@ -24,7 +23,7 @@ pub struct IronShieldClient {
 
 impl IronShieldClient {
     pub fn new(config: ClientConfig) -> ResultHandler<Self> {
-        verbose_section!(config, "Client Initialization");
+        crate::verbose_section!(config, "Client Initialization");
 
         if !config.endpoint.starts_with("https://") {
             return Err(ErrorHandler::config_error(
@@ -36,7 +35,7 @@ impl IronShieldClient {
             .timeout(config.timeout)
             .build()?;
 
-        verbose_log!(config, success, "Client initialized successfully.");
+        crate::verbose_log!(config, success, "Client initialized successfully.");
 
         Ok(Self {
             config,
@@ -55,8 +54,8 @@ impl IronShieldClient {
         &self,
         endpoint: &str
     ) -> ResultHandler<IronShieldChallenge> {
-        verbose_section!(self.config, "Challenge Fetching");
-        verbose_log!(self.config, network, "Requesting challenge for endpoint: {}", endpoint);
+        crate::verbose_section!(self.config, "Challenge Fetching");
+        crate::verbose_log!(self.config, network, "Requesting challenge for endpoint: {}", endpoint);
 
         let request = IronShieldRequest::new(
             endpoint.to_string(),
@@ -67,7 +66,7 @@ impl IronShieldClient {
 
         let response = self.make_api_request(&request).await?;
 
-        verbose_log!(
+        crate::verbose_log!(
             self.config,
             timing,
             "Challenge fetch completed in {:?}",
@@ -75,7 +74,7 @@ impl IronShieldClient {
         );
 
         let api_response = ApiResponse::from_json(response)?;
-        verbose_log!(self.config, info, "API response: {}", api_response.message);
+        crate::verbose_log!(self.config, info, "API response: {}", api_response.message);
 
         api_response.extract_challenge()
     }
@@ -84,6 +83,33 @@ impl IronShieldClient {
         &self,
         request: &IronShieldRequest
     ) -> ResultHandler<serde_json::Value> {
+        crate::verbose_log!(
+            self.config,
+            network,
+            "Making API request to: {}/request",
+            self.config.api_base_url
+        );
+
+        // Serialize the request to JSON for logging.
+        match serde_json::to_string_pretty(request) {
+            Ok(json_string) => {
+                crate::verbose_log!(
+                    self.config,
+                    submit,
+                    "Request JSON payload:\n{}",
+                    json_string
+                );
+            }
+            Err(e) => {
+                crate::verbose_log!(
+                    self.config,
+                    warning,
+                    "Failed to serialize request for logging: {}",
+                    e
+                );
+            }
+        }
+
         let response = self
             .http_client
             .post(&format!("{}/request", self.config.api_base_url))
@@ -93,6 +119,13 @@ impl IronShieldClient {
             .await
             .map_err(ErrorHandler::from_network_error)?;
 
+        crate::verbose_log!(
+            self.config,
+            network,
+            "API response status: {}",
+            response.status()
+        );
+
         if !response.status().is_success() {
             return Err(ErrorHandler::ProcessingError(format!(
                 "API request failed with status: {}",
@@ -100,6 +133,28 @@ impl IronShieldClient {
             )))
         }
 
-        response.json().await.map_err(ErrorHandler::from_network_error)
+        let json_response = response.json().await.map_err(ErrorHandler::from_network_error)?;
+
+        // Log the complete response JSON.
+        match serde_json::to_string_pretty(&json_response) {
+            Ok(response_json) => {
+                crate::verbose_log!(
+                    self.config,
+                    receive,
+                    "Response JSON payload:\n{}",
+                    response_json
+                );
+            }
+            Err(e) => {
+                crate::verbose_log!(
+                    self.config,
+                    warning,
+                    "Failed to serialize response for logging: {}",
+                    e
+                );
+            }
+        }
+
+        Ok(json_response)
     }
 }

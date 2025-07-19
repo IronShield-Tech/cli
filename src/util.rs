@@ -2,9 +2,9 @@
 ///
 /// # Example
 /// ```
-/// verbose_println!(config, "Simple message")
-/// verbose_println!(config, "Formatted message: {}", value)
-/// verbose_println!(config, "Multiple values: {} and {}", val1, val2)
+/// verbose_println!(config, "Simple message");
+/// verbose_println!(config, "Formatted message: {}", value);
+/// verbose_println!(config, "Multiple values: {} and {}", val1, val2);
 /// ```
 #[macro_export]
 macro_rules! verbose_println {
@@ -19,8 +19,8 @@ macro_rules! verbose_println {
 ///
 /// # Example
 /// ```
-/// verbose_print!(config, "Message without newline")
-/// verbose_print!(config, "Progress: {}", percentage)
+/// verbose_print!(config, "Message without newline");
+/// verbose_print!(config, "Progress: {}", percentage);
 /// ```
 #[macro_export]
 macro_rules! verbose_print {
@@ -33,14 +33,14 @@ macro_rules! verbose_print {
     };
 }
 
-/// Macro for verbose *logging* with a new line that prints only if
+/// Macro for verbose logging with a new line that prints only if
 /// verbose mode is enabled.
 ///
 /// # Example
 /// ```
-/// verbose_log!(config, info, "Information")
-/// verbose_log!(config, success, "Success")
-/// verbose_log!(config, error, "Error")
+/// verbose_log!(config, info, "Information");
+/// verbose_log!(config, success, "Success");
+/// verbose_log!(config, error, "Error");
 /// ```
 #[macro_export]
 macro_rules! verbose_log {
@@ -123,4 +123,38 @@ macro_rules! verbose_section {
             println!("{}", "─".repeat(40));
         }
     };
+}
+
+#[cfg(test)]
+mod tests {
+    use crate::config::ClientConfig;
+
+    #[test]
+    fn test_verbose_macros() {
+        let verbose_config = ClientConfig {
+            endpoint: "https://test.com".to_string(),
+            api_base_url: "https://api.test.com".to_string(),
+            timeout: std::time::Duration::from_secs(30),
+            verbose: true,
+            num_threads: None,
+        };
+
+        let quiet_config = ClientConfig {
+            endpoint: "https://test.com".to_string(),
+            api_base_url: "https://api.test.com".to_string(),
+            timeout: std::time::Duration::from_secs(30),
+            verbose: false,
+            num_threads: None,
+        };
+
+        // These should print when verbose is true.
+        crate::verbose_log!(verbose_config, info, "Test info message");
+        crate::verbose_section!(verbose_config, "Test Section");
+        crate::verbose_kv!(verbose_config, "Key", "Value");
+
+        // These should not print when verbose is false.
+        crate::verbose_log!(quiet_config, info, "This should not print");
+        crate::verbose_section!(quiet_config, "This should not print");
+        crate::verbose_kv!(quiet_config, "Key", "This should not print");
+    }
 }
