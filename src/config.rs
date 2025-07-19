@@ -24,7 +24,7 @@ impl Default for ClientConfig {
             api_base_url: "https://api.ironshield.cloud".to_string(),
             timeout:      Duration::from_secs(30),
             verbose:      true,
-            num_threads:  None, // Default to single-threaded.
+            num_threads:  Some(12), // Default to single-threaded.
         }
     }
 }
@@ -201,7 +201,6 @@ mod duration_serde {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use std::fs;
     use tempfile::tempdir;
 
     #[test]

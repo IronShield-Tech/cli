@@ -39,7 +39,7 @@ async fn main() -> Result<()> {
 
     let args = CliArgs::parse()?;
 
-    let config = ClientConfig::from_file(&args.config_path)?;
+    let config = ClientConfig::default();
 
     let client = IronShieldClient::new(config)?;
 
@@ -112,14 +112,6 @@ impl CliArgs {
     pub fn parse() -> Result<Self, CliError> {
         Ok(Parser::parse())
     }
-}
-
-/// Execute test operations.
-async fn execute_test_command() -> Result<(), CliError> {
-    println!("Running test operations...");
-    // TODO: Implement test functionality.
-    println!("✅ Test completed successfully");
-    Ok(())
 }
 
 #[derive(Debug, Default)]
