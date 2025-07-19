@@ -1,4 +1,3 @@
-
 /// Macro for verbose printing that only prints if verbose mode is enabled.
 ///
 /// # Example
@@ -41,6 +40,7 @@ macro_rules! verbose_print {
 /// ```
 /// verbose_log!(config, info, "Information")
 /// verbose_log!(config, success, "Success")
+/// verbose_log!(config, error, "Error")
 /// ```
 #[macro_export]
 macro_rules! verbose_log {
