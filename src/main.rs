@@ -39,7 +39,7 @@ async fn main() -> Result<()> {
 
     let args = CliArgs::parse()?;
 
-    let config = ClientConfig::default();
+    let config = ClientConfig::from_file(&args.config_path)?;
 
     let client = IronShieldClient::new(config)?;
 
@@ -95,16 +95,6 @@ pub enum Commands {
         )]
         endpoint: String,
     },
-//    /// Solve a challenge for the specified endpoint.
-//    Solve {
-//        /// The endpoint URL to solve a challenge for.
-//        #[arg(short, long)]
-//        endpoint: String,
-//    },
-//    /// Run test operations.
-//    Test,
-//    /// Launch the TUI interface (default behavior).
-//    Tui,
 }
 
 impl CliArgs {

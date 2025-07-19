@@ -23,7 +23,7 @@ impl Default for ClientConfig {
             endpoint:     "https://example.com/api".to_string(),
             api_base_url: "https://api.ironshield.cloud".to_string(),
             timeout:      Duration::from_secs(30),
-            verbose:      false,
+            verbose:      true,
             num_threads:  Some(12), // Default to single-threaded.
         }
     }

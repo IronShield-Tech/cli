@@ -119,7 +119,7 @@ macro_rules! verbose_kv {
 macro_rules! verbose_section {
     ($config:expr, $($arg:tt)*) => {
         if $config.verbose {
-            println!("\n🔸 {}", format_args!($($arg)*));
+            println!("\n🔸  {}", format_args!($($arg)*));
             println!("{}", "─".repeat(40));
         }
     };

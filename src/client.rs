@@ -17,7 +17,7 @@ use crate::response::ApiResponse;
 use std::time::Instant;
 
 pub struct IronShieldClient {
-    config: ClientConfig,
+    config:      ClientConfig,
     http_client: Client,
 }
 
@@ -50,6 +50,12 @@ impl IronShieldClient {
     ///
     /// # Returns
     /// * `ResultHandler<IronShieldChallenge>`: The challenge to solve.
+    ///
+    /// # Examples
+    /// ```
+    /// let challenge = client.fetch_challenge("https://example.com/protected").await?;
+    /// println!("Challenge difficulty: {}", challenge.recommended_attempts);
+    /// ```
     pub async fn fetch_challenge(
         &self,
         endpoint: &str
