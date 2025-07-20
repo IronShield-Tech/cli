@@ -37,6 +37,7 @@ impl Default for HttpClientBuilder {
     }
 }
 
+#[allow(dead_code)]
 impl HttpClientBuilder {
     /// # Returns
     /// `Self`: A new `HttpClientBuilder` with a default configuration.

@@ -29,6 +29,7 @@ impl Default for ClientConfig {
     }
 }
 
+#[allow(dead_code)]
 impl ClientConfig {
     /// Loads a configuration file from a TOML file,
     /// falling back to defaults if it is not present.
