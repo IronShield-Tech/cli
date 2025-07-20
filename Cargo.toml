@@ -5,6 +5,7 @@ description = "IronShield CLI component"
 authors = ["IronShield Developers <software@ironshield.cloud>"]
 license = "Apache-2.0"
 edition = "2021"
+exclude = [".DS_Store"]
 
 [[bin]]
 name = "ironshield"
