@@ -5,6 +5,7 @@ mod error;
 mod response;
 mod http_builder;
 mod constant;
+mod solve;
 
 use crate::client::IronShieldClient;
 use crate::error::CliError;
@@ -37,11 +38,11 @@ use clap::{
 async fn main() -> Result<()> {
     color_eyre::install()?;
 
-    let args = CliArgs::parse()?;
+    let args: CliArgs = CliArgs::parse()?;
 
-    let config = ClientConfig::from_file(&args.config_path)?;
+    let config: ClientConfig = ClientConfig::from_file(&args.config_path)?;
 
-    let client = IronShieldClient::new(config)?;
+    let client: IronShieldClient = IronShieldClient::new(config.clone())?;
 
     // Execute the command based on CLI arguments.
     match args.command {
@@ -51,7 +52,21 @@ async fn main() -> Result<()> {
             println!("Recommended attempts: {}", challenge.recommended_attempts);
             // Add any other challenge info you want to display.
         },
-        Commands::Solve { endpoint: _, use_multithreaded: _ } => println!("hi"),
+        Commands::Solve { endpoint, single_threaded } => {
+            // First fetch the challenge
+            let challenge: ironshield_core::IronShieldChallenge = client.fetch_challenge(&endpoint).await?;
+            println!("Challenge fetched successfully!");
+            
+            // Then solve it (invert single_threaded flag to get use_multithreaded)
+            let solution: ironshield_core::IronShieldChallengeResponse = solve::solve_challenge(
+                challenge, 
+                &config, 
+                !single_threaded
+            ).await?;
+            
+            println!("Challenge solved successfully!");
+            println!("Solution: {:?}", solution);
+        },
     };
 
     Ok(())
@@ -110,11 +125,11 @@ pub enum Commands {
         endpoint: String,
 
         #[arg(
-            short = 'm',
-            long,
-            help = "Use multithreaded solving for better performance."
+            short = 's',
+            long = "single-threaded",
+            help = "Use single-threaded solving instead of the default multithreaded approach."
         )]
-        use_multithreaded: bool,
+        single_threaded: bool,
     },
 }
 
