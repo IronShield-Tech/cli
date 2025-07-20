@@ -543,7 +543,7 @@ checksum = "70e796c081cee67dc755e1a36a0a172b897fab85fc3f6bc48307991f64e4eca9"
 dependencies = [
  "curve25519-dalek",
  "ed25519",
- "rand_core",
+ "rand_core 0.6.4",
  "serde",
  "sha2",
  "subtle",
@@ -1141,17 +1141,18 @@ dependencies = [
 
 [[package]]
 name = "ironshield-api"
-version = "0.1.38"
+version = "0.1.45"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "2b846ae8b4f2f6389d0a65c7efb4361e28876d186172d63a61e54f97a885c873"
+checksum = "dfc59616994fa15a11a3b32a0bedd8c15cb5ccb5a7c93dc55e61391d3b9cab33"
 dependencies = [
  "axum",
  "base64",
  "chrono",
  "ed25519-dalek",
  "hex",
+ "ironshield-core",
  "ironshield-types",
- "rand_core",
+ "rand_core 0.9.3",
  "reqwest",
  "serde_json",
  "thiserror",
@@ -1214,7 +1215,7 @@ dependencies = [
  "ed25519-dalek",
  "hex",
  "rand",
- "rand_core",
+ "rand_core 0.6.4",
  "serde",
  "serde-wasm-bindgen",
  "serde_json",
@@ -1582,7 +1583,7 @@ checksum = "34af8d1a0e25924bc5b7c43c079c942339d8f0a8b57c39049bef581b46327404"
 dependencies = [
  "libc",
  "rand_chacha",
- "rand_core",
+ "rand_core 0.6.4",
 ]
 
 [[package]]
@@ -1592,7 +1593,7 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "e6c10a63a0fa32252be49d21e7709d4d4baf8d231c2dbce1eaa8141b9b127d88"
 dependencies = [
  "ppv-lite86",
- "rand_core",
+ "rand_core 0.6.4",
 ]
 
 [[package]]
@@ -1603,6 +1604,12 @@ checksum = "ec0be4795e2f6a28069bec0b5ff3e2ac9bafc99e6a9a7dc3547996c5c816922c"
 dependencies = [
  "getrandom 0.2.16",
 ]
+
+[[package]]
+name = "rand_core"
+version = "0.9.3"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "99d9a13982dcf210057a8a78572b2217b667c3beacbf3a0d8b454f6f82837d38"
 
 [[package]]
 name = "ratatui"
@@ -1974,7 +1981,7 @@ version = "2.2.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "77549399552de45a898a580c1b41d445bf730df867cc44e6c0233bbc4b8329de"
 dependencies = [
- "rand_core",
+ "rand_core 0.6.4",
 ]
 
 [[package]]
