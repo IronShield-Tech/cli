@@ -1,5 +1,5 @@
 [package]
-name = "ironshield-cli"
+name = "ironshield"
 version = "0.1.0"
 description = "IronShield CLI component"
 authors = ["Sam Sporidis"]
