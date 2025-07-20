@@ -5,7 +5,7 @@ use ironshield_api::handler::{
 use ironshield_types::{IronShieldChallenge, IronShieldChallengeResponse};
 use crate::config::ClientConfig;
 
-use std::sync::Arc;
+use std::sync::{Arc, atomic::{AtomicBool, Ordering}};
 use std::time::Instant;
 use tokio::task::JoinHandle;
 use futures::future;
@@ -55,7 +55,6 @@ pub async fn solve_challenge(
     crate::verbose_kv!(config, "Recommended Attempts", challenge.recommended_attempts);
 
     let start_time = Instant::now();
-    let performance_start = std::time::SystemTime::now();
 
     let result = if solve_config.use_multithreaded && solve_config.thread_count > 1 {
         solve_multithreaded(challenge, solve_config.clone(), config).await
@@ -68,47 +67,36 @@ pub async fn solve_challenge(
             let elapsed = start_time.elapsed();
             let elapsed_millis = elapsed.as_millis() as u64;
             
-            // Calculate estimated hash rate based on solution nonce and time
-            let estimated_attempts = solution.solution as u64;
+            // Calculate estimated total attempts across all threads using thread-stride analysis
+            // In thread-stride: if thread T finds solution at nonce N, it has done roughly (N/thread_count) attempts
+            // Other threads have done roughly the same amount of work
+            let solution_nonce = solution.solution as u64;
+            let estimated_attempts_per_thread = (solution_nonce / solve_config.thread_count as u64) + 1;
+            let estimated_total_attempts = estimated_attempts_per_thread * solve_config.thread_count as u64;
+            
             let hash_rate = if elapsed_millis > 0 {
-                (estimated_attempts * 1000) / elapsed_millis
+                (estimated_total_attempts * 1000) / elapsed_millis
             } else {
-                estimated_attempts  // If solved instantly, assume 1ms
+                estimated_total_attempts  // If solved instantly, assume 1ms
             };
             
             crate::verbose_log!(
                 config,
                 timing,
-                "Challenge solved in {:?} (~{} attempts, ~{} h/s)",
+                "Challenge solved in {:?} (~{} estimated total attempts, ~{} h/s)",
                 elapsed,
-                estimated_attempts,
+                estimated_total_attempts,
                 hash_rate
             );
             
             crate::verbose_log!(
                 config,
                 success,
-                "Performance: {} threads achieved ~{} hashes/second",
+                "Performance: {} threads achieved ~{} hashes/second (solution found at nonce {})",
                 solve_config.thread_count,
-                hash_rate
+                hash_rate,
+                solution_nonce
             );
-            
-            // Compare with JavaScript benchmarks mentioned in the codebase
-            if elapsed_millis < 1000 {
-                crate::verbose_log!(
-                    config,
-                    success,
-                    "Excellent performance! Solved in {}ms (matching WASM-level speed)",
-                    elapsed_millis
-                );
-            } else if elapsed_millis < 5000 {
-                crate::verbose_log!(
-                    config,
-                    success,
-                    "Good performance! Solved in {:.1}s (optimized multithreaded)",
-                    elapsed.as_secs_f32()
-                );
-            }
             
             Ok(solution)
         },
@@ -136,6 +124,9 @@ async fn solve_multithreaded(
 
     let challenge = Arc::new(challenge);
     let mut handles: Vec<JoinHandle<ResultHandler<IronShieldChallengeResponse>>> = Vec::new();
+    
+    // Shared cancellation flag to stop progress reporting after solution found
+    let solution_found = Arc::new(AtomicBool::new(false));
 
     // Spawn worker threads with proper stride and offset
     for thread_id in 0..solve_config.thread_count {
@@ -143,6 +134,7 @@ async fn solve_multithreaded(
         let thread_stride = solve_config.thread_count as u64;
         let thread_offset = thread_id as u64;
         let config_clone = config.clone();
+        let solution_found_clone = Arc::clone(&solution_found);
         
         crate::verbose_log!(
             config, 
@@ -154,26 +146,40 @@ async fn solve_multithreaded(
         );
 
         let handle = tokio::task::spawn_blocking(move || {
+            // Track thread start time for accurate hash rate calculation
+            let thread_start_time = Instant::now();
+            
+            // Track cumulative attempts (core callback gives us batch sizes, not cumulative)
+            let cumulative_attempts = Arc::new(std::sync::atomic::AtomicU64::new(0));
+            let cumulative_attempts_clone = Arc::clone(&cumulative_attempts);
+            
             // Progress callback for status updates - provides the "status checks" during hashing
-            let progress_callback = |attempts: u64| {
-                let elapsed = std::time::SystemTime::now()
-                    .duration_since(std::time::UNIX_EPOCH)
-                    .unwrap_or_default()
-                    .as_millis();
+            let progress_callback = |batch_attempts: u64| {
+                // Stop reporting progress if solution already found by another thread
+                if solution_found_clone.load(Ordering::Relaxed) {
+                    return;
+                }
                 
-                // Calculate hash rate (attempts per second)
-                let hash_rate = if elapsed > 0 {
-                    (attempts as u128 * 1000) / elapsed
+                // The core callback gives us BATCH SIZE (always 200,000), not cumulative!
+                // We need to accumulate these batches like the JavaScript implementation
+                let total_attempts = cumulative_attempts_clone.fetch_add(batch_attempts, Ordering::Relaxed) + batch_attempts;
+                
+                let elapsed = thread_start_time.elapsed();
+                let elapsed_millis = elapsed.as_millis() as u64;
+                
+                // Calculate hash rate based on CUMULATIVE attempts, not just this batch
+                let hash_rate = if elapsed_millis > 0 {
+                    (total_attempts * 1000) / elapsed_millis
                 } else {
-                    0
+                    total_attempts  // If solved instantly, assume 1ms
                 };
                 
                 crate::verbose_log!(
                     config_clone,
                     compute,
-                    "Thread {} progress: {} attempts ({} h/s)",
+                    "Thread {} progress: {} total attempts on this thread ({} hashes/second)",
                     thread_id,
-                    attempts,
+                    total_attempts,
                     hash_rate
                 );
             };
@@ -204,15 +210,18 @@ async fn solve_multithreaded(
 
         match result {
             Ok(Ok(found_solution)) => {
-                crate::verbose_log!(config, success, "Thread {} found solution! Aborting {} other threads.", thread_index, other_handles.len());
+                // Signal all threads to stop progress reporting
+                solution_found.store(true, Ordering::Relaxed);
+                
+                crate::verbose_log!(config, success, "Thread {} found solution! Signaling {} other threads to stop progress reporting.", thread_index, other_handles.len());
                 solution = Some(found_solution);
                 
                 // Abort all remaining handles immediately
-                // Note: The core computation cannot be cancelled, but we stop the tokio tasks
+                // Note: The core computation cannot be cancelled, but we stop the tokio tasks and progress reporting
                 for handle in other_handles {
                     handle.abort();
                 }
-                crate::verbose_log!(config, success, "All remaining threads aborted (core computation may continue briefly).");
+                crate::verbose_log!(config, success, "All remaining threads aborted (core computation may continue briefly but progress reporting stopped).");
                 break;
             },
             Ok(Err(e)) => {

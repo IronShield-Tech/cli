@@ -50,7 +50,9 @@ async fn main() -> Result<()> {
             let challenge = client.fetch_challenge(&endpoint).await?;
             println!("Challenge fetched successfully!");
             println!("Recommended attempts: {}", challenge.recommended_attempts);
-            // Add any other challenge info you want to display.
+            
+            // Force clean exit to prevent hanging from aborted background threads
+            std::process::exit(0);
         },
         Commands::Solve { endpoint, single_threaded } => {
             // First fetch the challenge
@@ -66,10 +68,11 @@ async fn main() -> Result<()> {
             
             println!("Challenge solved successfully!");
             println!("Solution: {:?}", solution);
+            
+            // Force clean exit to prevent hanging from aborted background threads
+            std::process::exit(0);
         },
     };
-
-    Ok(())
 }
 
 #[derive(Parser)]

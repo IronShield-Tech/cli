@@ -34,11 +34,10 @@ serde = { version = "1.0.219", features = ["derive"] }
 tempfile = "3.20.0"
 num_cpus = "1.16"
 
-# Aggressive optimization profile to match WASM performance
-# These settings provide massive performance improvements for PoW hashing
+# Aggressive release profile optimized for performance
 [profile.release]
 lto = true               # Link Time Optimization - enables cross-crate inlining
-opt-level = 3            # Maximum speed optimization (use 3 instead of "z" for CLI)
+opt-level = 3            # Optimize for maximum performance
 strip = true             # Strip debug symbols for smaller binary
 codegen-units = 1        # Single codegen unit for maximum optimization opportunities
-panic = "abort"          # Smaller and faster than unwinding
+panic = "abort"          # Aborting instead of unwinding results in a much smaller and performant binary
