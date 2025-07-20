@@ -1140,29 +1140,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "ironshield"
-version = "0.1.0"
-dependencies = [
- "clap",
- "color-eyre",
- "crossterm",
- "futures",
- "ironshield-api",
- "ironshield-core",
- "ironshield-types",
- "num_cpus",
- "ratatui",
- "reqwest",
- "serde",
- "serde_json",
- "tempfile",
- "thiserror",
- "tokio",
- "tokio-util",
- "toml",
-]
-
-[[package]]
 name = "ironshield-api"
 version = "0.1.45"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -1183,6 +1160,29 @@ dependencies = [
  "tower-http",
  "tracing",
  "tracing-subscriber",
+]
+
+[[package]]
+name = "ironshield-cli"
+version = "0.1.0"
+dependencies = [
+ "clap",
+ "color-eyre",
+ "crossterm",
+ "futures",
+ "ironshield-api",
+ "ironshield-core",
+ "ironshield-types",
+ "num_cpus",
+ "ratatui",
+ "reqwest",
+ "serde",
+ "serde_json",
+ "tempfile",
+ "thiserror",
+ "tokio",
+ "tokio-util",
+ "toml",
 ]
 
 [[package]]

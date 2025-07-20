@@ -1,10 +1,14 @@
 [package]
-name = "ironshield"
+name = "ironshield-cli"
 version = "0.1.0"
 description = "IronShield CLI component"
-authors = ["Sam Sporidis"]
+authors = ["IronShield Developers <software@ironshield.cloud>"]
 license = "Apache-2.0"
 edition = "2021"
+
+[[bin]]
+name = "ironshield"
+path = "src/main.rs"
 
 [features]
 default = ["parallel"]
