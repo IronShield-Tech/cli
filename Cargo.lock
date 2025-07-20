@@ -1205,16 +1205,15 @@ dependencies = [
 
 [[package]]
 name = "ironshield-types"
-version = "0.1.34"
+version = "0.1.38"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "4467681cb9668a3c2544caf0ebccad34214b896144e434cb7036834035313859"
+checksum = "4cefff9f0da71031e6a7b758163f3a7a3cc34c8a1190de40631f992bd86a0578"
 dependencies = [
  "base64",
  "chrono",
  "ed25519-dalek",
  "hex",
  "rand",
- "rand_core",
  "serde",
  "serde-wasm-bindgen",
  "serde_json",
