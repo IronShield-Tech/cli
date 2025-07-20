@@ -45,7 +45,13 @@ async fn main() -> Result<()> {
 
     // Execute the command based on CLI arguments.
     match args.command {
-        Commands::Fetch { endpoint } => client.fetch_challenge(&endpoint).await?,
+        Commands::Fetch { endpoint } => {
+            let challenge = client.fetch_challenge(&endpoint).await?;
+            println!("Challenge fetched successfully!");
+            println!("Recommended attempts: {}", challenge.recommended_attempts);
+            // Add any other challenge info you want to display.
+        },
+        Commands::Solve { endpoint: _, use_multithreaded: _ } => println!("hi"),
     };
 
     Ok(())
@@ -94,6 +100,21 @@ pub enum Commands {
             help = "The protected endpoint URL to request a challenge for."
         )]
         endpoint: String,
+    },
+    Solve {
+        #[arg(
+            short,
+            long,
+            help = "The protected endpoint URL to solve a challenge for."
+        )]
+        endpoint: String,
+
+        #[arg(
+            short = 'm',
+            long,
+            help = "Use multithreaded solving for better performance."
+        )]
+        use_multithreaded: bool,
     },
 }
 
