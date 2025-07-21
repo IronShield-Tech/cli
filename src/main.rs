@@ -69,6 +69,9 @@ async fn main() -> Result<()> {
     let client: IronShieldClient = IronShieldClient::new(config.clone())?;
 
     match args.command {
+        // Calling !single_threaded is ok cuz it just falls back if you can't
+        // anyway.
+        // Great programming thanks ethan.
         Commands::Fetch { endpoint, .. } => {
             let challenge = client.fetch_challenge(&endpoint).await?;
             println!("Challenge fetched successfully!");
