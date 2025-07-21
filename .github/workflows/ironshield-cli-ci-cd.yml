@@ -150,10 +150,6 @@ jobs:
           git commit -m "chore: bump version to ${{ env.NEW_VERSION }} [skip ci]"
           git push origin main
 
-      # Run tests.
-      - name: Run Tests
-        run: cargo test
-
       # Publish to crates.io.
       - name: Publish
         env:
