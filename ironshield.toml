@@ -1,4 +1,4 @@
 api_base_url = "https://api.ironshield.cloud"
-endpoint = "https://example.com/protected"
+user_agent = "curl/8.4.0"
 timeout = 30
 verbose = true

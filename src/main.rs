@@ -48,36 +48,48 @@ async fn main() -> Result<()> {
 
     let args: CliArgs = CliArgs::parse()?;
 
-    let config: ClientConfig = ClientConfig::from_file(&args.config_path)?;
+    let (config_path, verbose) = match &args.command {
+        Commands::Fetch    { config_path, verbose, .. } => (config_path, *verbose),
+        Commands::Solve    { config_path, verbose, .. } => (config_path, *verbose),
+        Commands::Validate { config_path, verbose, .. } => (config_path, *verbose),
+    };
+
+    let mut config: ClientConfig = match config_path {
+        Some(path) => ClientConfig::from_file(&path)?,
+        None => {
+            println!("No config file specified, using default configuration.");
+            ClientConfig::default()
+        }
+    };
+
+    if verbose || args.verbose {
+        config.verbose = true
+    };
 
     let client: IronShieldClient = IronShieldClient::new(config.clone())?;
 
-    // Execute the command based on CLI arguments.
     match args.command {
-        Commands::Fetch { endpoint } => {
+        Commands::Fetch { endpoint, .. } => {
             let challenge = client.fetch_challenge(&endpoint).await?;
             println!("Challenge fetched successfully!");
             println!("Recommended attempts: {}", challenge.recommended_attempts);
 
-            // Force clean exit to prevent hanging from aborted background threads
             std::process::exit(0);
         },
-        Commands::Solve { endpoint, single_threaded } => {
-            // First fetch the challenge
+        Commands::Solve { endpoint, single_threaded, .. } => {
             let challenge: IronShieldChallenge = client.fetch_challenge(&endpoint).await?;
             println!("Challenge fetched successfully!");
 
-            // Then solve it (invert single_threaded flag to get use_multithreaded)
+            // invert single_threaded flag to get use_multithreaded.
             let solution: IronShieldChallengeResponse =
                 solve::solve_challenge(challenge, &config, !single_threaded).await?;
 
             println!("Challenge solved successfully!");
             println!("Solution: {:?}", solution);
 
-            // Force clean exit to prevent hanging from aborted background threads
             std::process::exit(0);
         },
-        Commands::Validate { endpoint, single_threaded } => {
+        Commands::Validate { endpoint, single_threaded, .. } => {
             let token =
                 validate::validate_challenge(&client, &config, &endpoint, !single_threaded)
                     .await?;
@@ -85,10 +97,9 @@ async fn main() -> Result<()> {
             println!("Challenge validated successfully!");
             println!("Token: {:?}", token);
 
-            // Force clean exit to prevent hanging from aborted background threads
             std::process::exit(0);
         }
-    };
+    }
 }
 
 #[derive(Parser)]
@@ -104,10 +115,16 @@ pub struct CliArgs {
     #[arg(
         short,
         long,
-        default_value = "ironshield.toml",
+        help = "Enable verbose output (overrides config file setting)."
+    )]
+    pub verbose: bool,
+    #[arg(
+        short,
+        long,
+//      default_value = "ironshield.toml",
         help = "Path to the configuration file."
     )]
-    pub config_path: String,
+    pub config_path: Option<String>,
 
     #[command(subcommand)]
     pub command: Commands,
@@ -128,19 +145,25 @@ pub enum Commands {
 
     /// Fetches an IronShield request as an object.
     Fetch {
+        /// The protected endpoint URL to request from.
+        endpoint: String,
+
         #[arg(
             short,
             long,
-            help = "The protected endpoint URL to request a challenge for."
+            help = "Enable verbose output (overrides config file setting)."
         )]
-        endpoint: String,
+        verbose: bool,
+
+        #[arg(
+            short,
+            long,
+            help = "Path to the configuration file."
+        )]
+        config_path: Option<String>,
     },
     Solve {
-        #[arg(
-            short,
-            long,
-            help = "The protected endpoint URL to solve a challenge for."
-        )]
+        /// The protected endpoint URL to solve for.
         endpoint: String,
 
         #[arg(
@@ -149,13 +172,21 @@ pub enum Commands {
             help = "Use single-threaded solving instead of the default multithreaded approach."
         )]
         single_threaded: bool,
+        #[arg(
+            short,
+            long,
+            help = "Enable verbose output (overrides config file setting)."
+        )]
+        verbose: bool,
+        #[arg(
+            short,
+            long,
+            help = "Path to the configuration file."
+        )]
+        config_path: Option<String>,
     },
     Validate {
-        #[arg(
-            short,
-            long,
-            help = "The protected endpoint URL to validate a challenge for."
-        )]
+        /// The protected endpoint URL to validate a challenge with.
         endpoint: String,
 
         #[arg(
@@ -164,11 +195,22 @@ pub enum Commands {
             help = "Use single-threaded solving instead of the default multithreaded approach."
         )]
         single_threaded: bool,
+        #[arg(
+            short,
+            long,
+            help = "Enable verbose output (overrides config file setting)."
+        )]
+        verbose: bool,
+        #[arg(
+            short,
+            long,
+            help = "Path to the configuration file."
+        )]
+        config_path: Option<String>,
     }
 }
 
 impl CliArgs {
-    /// Parse command line arguments and return the structured CLI arguments.
     pub fn parse() -> Result<Self, CliError> {
         Ok(Parser::parse())
     }
@@ -176,9 +218,7 @@ impl CliArgs {
 
 #[derive(Debug, Default)]
 pub struct App {
-    /// Is the application running?
     running:      bool,
-    /// Event stream for handling terminal events.
     event_stream: EventStream,
 }
 

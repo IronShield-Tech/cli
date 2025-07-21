@@ -40,7 +40,7 @@ impl IronShieldClient {
     pub fn new(config: ClientConfig) -> ResultHandler<Self> {
         crate::verbose_section!(config, "Client Initialization");
 
-        if !config.endpoint.starts_with("https://") {
+        if !config.api_base_url.starts_with("https://") {
             return Err(ErrorHandler::config_error(
                 ironshield_api::handler::error::INVALID_ENDPOINT
             ));

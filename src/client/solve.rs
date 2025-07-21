@@ -330,11 +330,11 @@ mod tests {
     #[test]
     fn test_solve_config_single_threaded() {
         let config = ClientConfig {
-            endpoint: "https://test.com".to_string(),
             api_base_url: "https://api.test.com".to_string(),
-            timeout: Duration::from_secs(30),
-            verbose: false,
             num_threads: Some(4),
+            timeout: Duration::from_secs(30),
+            user_agent: crate::constant::USER_AGENT.to_string(),
+            verbose: false,
         };
 
         let solve_config = SolveConfig::new(&config, false);
@@ -345,11 +345,11 @@ mod tests {
     #[test]
     fn test_solve_config_multithreaded() {
         let config = ClientConfig {
-            endpoint: "https://test.com".to_string(),
             api_base_url: "https://api.test.com".to_string(),
-            timeout: Duration::from_secs(30),
-            verbose: false,
             num_threads: Some(4),
+            timeout: Duration::from_secs(30),
+            user_agent: crate::constant::USER_AGENT.to_string(),
+            verbose: false,
         };
 
         let solve_config = SolveConfig::new(&config, true);
@@ -360,11 +360,11 @@ mod tests {
     #[test]
     fn test_solve_config_auto_thread_count() {
         let config = ClientConfig {
-            endpoint: "https://test.com".to_string(),
             api_base_url: "https://api.test.com".to_string(),
-            timeout: Duration::from_secs(30),
-            verbose: false,
             num_threads: None, // Auto-detect.
+            timeout: Duration::from_secs(30),
+            user_agent: crate::constant::USER_AGENT.to_string(),
+            verbose: false,
         };
 
         let solve_config = SolveConfig::new(&config, true);

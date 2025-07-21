@@ -9,22 +9,22 @@ use std::time::Duration;
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct ClientConfig {
-    pub endpoint:     String,
     pub api_base_url: String,
+    pub num_threads:  Option<usize>,
     #[serde(with = "duration_serde")]
     pub timeout:      Duration,
+    pub user_agent:   String,
     pub verbose:      bool,
-    pub num_threads:  Option<usize>,
 }
 
 impl Default for ClientConfig {
     fn default() -> Self {
         Self {
-            endpoint:     "https://example.com/api".to_string(),
             api_base_url: "https://api.ironshield.cloud".to_string(),
-            timeout:      Duration::from_secs(30),
-            verbose:      true,
             num_threads:  Some(num_cpus::get()), // Default to single-threaded.
+            timeout:      Duration::from_secs(30),
+            user_agent:   crate::constant::USER_AGENT.to_string(),
+            verbose:      false,
         }
     }
 }
@@ -126,11 +126,11 @@ impl ClientConfig {
 
     pub fn development() -> Self {
         Self {
-            endpoint:     "https://localhost:3000/api".to_string(),
             api_base_url: "https://localhost:3000".to_string(),
-            timeout:      Duration::from_secs(10),
-            verbose:      true,
             num_threads:  Some(2), // Use limited threading for development.
+            timeout:      Duration::from_secs(10),
+            user_agent:   crate::constant::USER_AGENT.to_string(),
+            verbose:      true,
         }
     }
 }

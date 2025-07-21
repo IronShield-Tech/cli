@@ -132,19 +132,19 @@ mod tests {
     #[test]
     fn test_verbose_macros() {
         let verbose_config = ClientConfig {
-            endpoint: "https://test.com".to_string(),
             api_base_url: "https://api.test.com".to_string(),
-            timeout: std::time::Duration::from_secs(30),
-            verbose: true,
             num_threads: None,
+            timeout: std::time::Duration::from_secs(30),
+            user_agent: crate::constant::USER_AGENT.to_string(),
+            verbose: true,
         };
 
         let quiet_config = ClientConfig {
-            endpoint: "https://test.com".to_string(),
             api_base_url: "https://api.test.com".to_string(),
-            timeout: std::time::Duration::from_secs(30),
-            verbose: false,
             num_threads: None,
+            timeout: std::time::Duration::from_secs(30),
+            user_agent: crate::constant::USER_AGENT.to_string(),
+            verbose: false,
         };
 
         // These should print when verbose is true.
