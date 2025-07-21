@@ -2,21 +2,20 @@ mod config;
 mod client;
 mod util;
 mod error;
-mod response;
-mod http_builder;
 mod constant;
-mod solve;
-mod validate;
 
-use crate::{
-    client::IronShieldClient,
-    config::ClientConfig,
-    error::CliError,
-};
 use color_eyre::Result;
-use crossterm::event::{Event, EventStream, KeyCode, KeyEventKind, KeyModifiers};
-use futures::{FutureExt, StreamExt};
-use ironshield_types::{IronShieldChallenge, IronShieldChallengeResponse};
+use crossterm::event::{
+    Event, 
+    EventStream, 
+    KeyCode, 
+    KeyEventKind, 
+    KeyModifiers
+};
+use futures::{
+    FutureExt, 
+    StreamExt
+};
 use ratatui::{
     DefaultTerminal,
     Frame,
@@ -28,6 +27,17 @@ use clap::{
     Parser,
     Subcommand
 };
+
+use crate::client::{
+    client::IronShieldClient,
+    solve,
+    validate
+};
+use crate::{
+    config::ClientConfig,
+    error::CliError,
+};
+use ironshield_types::{IronShieldChallenge, IronShieldChallengeResponse};
 
 #[tokio::main]
 async fn main() -> Result<()> {
