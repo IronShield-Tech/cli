@@ -13,8 +13,8 @@ use ironshield_types::{
 };
 
 use crate::config::ClientConfig;
-use crate::http_builder::HttpClientBuilder;
-use crate::response::ApiResponse;
+use crate::client::http_builder::HttpClientBuilder;
+use crate::client::response::ApiResponse;
 
 use std::time::Instant;
 

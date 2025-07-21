@@ -1,4 +1,3 @@
-use serde_json::Value;
 use ironshield_api::handler::{
     error::ErrorHandler,
     result::ResultHandler
@@ -7,6 +6,8 @@ use ironshield_types::{
     IronShieldChallenge,
     IronShieldToken
 };
+
+use serde_json::Value;
 
 /// Represents a structured IronShield API response.
 ///

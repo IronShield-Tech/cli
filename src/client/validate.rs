@@ -1,6 +1,8 @@
 use crate::{
-    client::IronShieldClient,
     config::ClientConfig,
+};
+use crate::client::{
+    client::IronShieldClient,
     solve,
 };
 use ironshield_api::handler::result::ResultHandler;
@@ -10,7 +12,7 @@ use ironshield_types::IronShieldToken;
 ///
 /// This function orchestrates the entire validation flow:
 /// 1. Fetches a new challenge from the API for the specified endpoint.
-/// 2. Solves the challenge using either a multi-threaded or single-threaded approach.
+/// 2. Solves the challenge using either a multithreaded or single-threaded approach.
 /// 3. Submits the solved challenge back to the API.
 /// 4. Returns the received `IronShieldToken` upon successful validation.
 ///
@@ -19,7 +21,7 @@ use ironshield_types::IronShieldToken;
 /// * `client` - An instance of `IronShieldClient` to communicate with the API.
 /// * `config` - The client configuration.
 /// * `endpoint` - The protected endpoint URL to get a challenge for.
-/// * `use_multithread` - A boolean indicating whether to use multi-threaded solving.
+/// * `use_multithread` - A boolean indicating whether to use multithreaded solving.
 ///
 /// # Returns
 ///

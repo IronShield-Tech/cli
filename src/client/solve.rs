@@ -88,8 +88,7 @@ pub async fn solve_challenge(
     // Log timing and performance metrics.
     match result {
         Ok(solution) => {
-            let elapsed = start_time.elapsed();
-            log_solution_performance(&solution, elapsed, &solve_config, config);
+            log_solution_performance(&solution, start_time.elapsed(), &solve_config, config);
             Ok(solution)
         },
         Err(e) => {
