@@ -1150,7 +1150,7 @@ dependencies = [
  "chrono",
  "ed25519-dalek",
  "hex",
- "ironshield-core",
+ "ironshield-core 0.1.11",
  "ironshield-types",
  "rand_core 0.9.3",
  "reqwest",
@@ -1171,7 +1171,7 @@ dependencies = [
  "crossterm",
  "futures",
  "ironshield-api",
- "ironshield-core",
+ "ironshield-core 0.2.1",
  "ironshield-types",
  "num_cpus",
  "ratatui",
@@ -1190,6 +1190,25 @@ name = "ironshield-core"
 version = "0.1.11"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "8f8f4982c75d9af922eeed1a53e8c38f04820a1ecbc322fbd3c0c9207f35c834"
+dependencies = [
+ "base64",
+ "chrono",
+ "hex",
+ "ironshield-types",
+ "rand",
+ "rayon",
+ "serde",
+ "serde-wasm-bindgen",
+ "serde_json",
+ "sha2",
+ "wasm-bindgen",
+]
+
+[[package]]
+name = "ironshield-core"
+version = "0.2.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "991a607ba3eb161ca20318d3aebde326c5ab1a3186d47b965e2eb161c6c3a71d"
 dependencies = [
  "base64",
  "chrono",
