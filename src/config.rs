@@ -38,9 +38,9 @@ impl ClientConfig {
     /// * `path`: The path to the TOML configuration file.
     ///
     /// # Returns
-    /// * `Result<Self, CliError>` containing the loaded
-    ///                            configuration, or an
-    ///                            error if parsing fails.
+    /// * `Result<Self, CliError>`: containing the loaded
+    ///                             configuration, or an
+    ///                             error if parsing fails.
     ///
     /// # Examples
     /// ```

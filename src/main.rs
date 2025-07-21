@@ -6,14 +6,14 @@ mod constant;
 
 use color_eyre::Result;
 use crossterm::event::{
-    Event, 
-    EventStream, 
-    KeyCode, 
-    KeyEventKind, 
+    Event,
+    EventStream,
+    KeyCode,
+    KeyEventKind,
     KeyModifiers
 };
 use futures::{
-    FutureExt, 
+    FutureExt,
     StreamExt
 };
 use ratatui::{
@@ -37,7 +37,10 @@ use crate::{
     config::ClientConfig,
     error::CliError,
 };
-use ironshield_types::{IronShieldChallenge, IronShieldChallengeResponse};
+use ironshield_types::{
+    IronShieldChallenge,
+    IronShieldChallengeResponse
+};
 
 #[tokio::main]
 async fn main() -> Result<()> {
