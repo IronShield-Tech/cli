@@ -6,25 +6,20 @@ mod response;
 mod http_builder;
 mod constant;
 mod solve;
+mod validate;
 
-use crate::client::IronShieldClient;
-use crate::error::CliError;
-use crate::config::ClientConfig;
-
+use crate::{
+    client::IronShieldClient,
+    config::ClientConfig,
+    error::CliError,
+};
 use color_eyre::Result;
-use crossterm::event::{
-    Event,
-    EventStream,
-    KeyCode,
-    KeyEventKind,
-    KeyModifiers
-};
-use futures::{
-    FutureExt,
-    StreamExt
-};
+use crossterm::event::{Event, EventStream, KeyCode, KeyEventKind, KeyModifiers};
+use futures::{FutureExt, StreamExt};
+use ironshield_types::{IronShieldChallenge, IronShieldChallengeResponse};
 use ratatui::{
-    DefaultTerminal, Frame,
+    DefaultTerminal,
+    Frame,
     style::Stylize,
     text::Line,
     widgets::{Block, Paragraph},
@@ -50,28 +45,36 @@ async fn main() -> Result<()> {
             let challenge = client.fetch_challenge(&endpoint).await?;
             println!("Challenge fetched successfully!");
             println!("Recommended attempts: {}", challenge.recommended_attempts);
-            
+
             // Force clean exit to prevent hanging from aborted background threads
             std::process::exit(0);
         },
         Commands::Solve { endpoint, single_threaded } => {
             // First fetch the challenge
-            let challenge: ironshield_core::IronShieldChallenge = client.fetch_challenge(&endpoint).await?;
+            let challenge: IronShieldChallenge = client.fetch_challenge(&endpoint).await?;
             println!("Challenge fetched successfully!");
-            
+
             // Then solve it (invert single_threaded flag to get use_multithreaded)
-            let solution: ironshield_core::IronShieldChallengeResponse = solve::solve_challenge(
-                challenge, 
-                &config, 
-                !single_threaded
-            ).await?;
-            
+            let solution: IronShieldChallengeResponse =
+                solve::solve_challenge(challenge, &config, !single_threaded).await?;
+
             println!("Challenge solved successfully!");
             println!("Solution: {:?}", solution);
-            
+
             // Force clean exit to prevent hanging from aborted background threads
             std::process::exit(0);
         },
+        Commands::Validate { endpoint, single_threaded } => {
+            let token =
+                validate::validate_challenge(&client, &config, &endpoint, !single_threaded)
+                    .await?;
+
+            println!("Challenge validated successfully!");
+            println!("Token: {:?}", token);
+
+            // Force clean exit to prevent hanging from aborted background threads
+            std::process::exit(0);
+        }
     };
 }
 
@@ -134,6 +137,21 @@ pub enum Commands {
         )]
         single_threaded: bool,
     },
+    Validate {
+        #[arg(
+            short,
+            long,
+            help = "The protected endpoint URL to validate a challenge for."
+        )]
+        endpoint: String,
+
+        #[arg(
+            short = 's',
+            long = "single-threaded",
+            help = "Use single-threaded solving instead of the default multithreaded approach."
+        )]
+        single_threaded: bool,
+    }
 }
 
 impl CliArgs {

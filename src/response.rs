@@ -3,7 +3,10 @@ use ironshield_api::handler::{
     error::ErrorHandler,
     result::ResultHandler
 };
-use ironshield_types::IronShieldChallenge;
+use ironshield_types::{
+    IronShieldChallenge,
+    IronShieldToken
+};
 
 /// Represents a structured IronShield API response.
 ///
@@ -73,19 +76,31 @@ impl ApiResponse {
     ///                                       missing/invalid.
     pub fn extract_challenge(&self) -> ResultHandler<IronShieldChallenge> {
         if !self.is_success() {
-            return Err(ErrorHandler::ProcessingError(format!(
-                "API error ({}): {}", self.status, self.message
-            )));
+            return Err(ErrorHandler::ProcessingError(self.message.clone()));
         }
 
-        let challenge_data = self.data.get("challenge")
-            .ok_or_else(|| ErrorHandler::ProcessingError(
-                "No challenge field in API response".to_string()
-            ))?;
+        let challenge_data = self.data.get("challenge").ok_or_else(|| {
+            ErrorHandler::ProcessingError("No 'challenge' field in API response".to_string())
+        })?;
 
-        serde_json::from_value(challenge_data.clone())
-            .map_err(|e| ErrorHandler::ProcessingError(format!(
-                "Failed to deserialize challenge: {}", e
-            )))
+        serde_json::from_value(challenge_data.clone()).map_err(ErrorHandler::from)
+    }
+
+    /// Extracts the `IronShieldToken` from the API response data.
+    ///
+    /// # Returns
+    /// * `ResultHandler<IronShieldToken>`: The extracted token on success,
+    ///                                     or an error if parsing fails or the
+    ///                                     request was not successful.
+    pub fn extract_token(&self) -> ResultHandler<IronShieldToken> {
+        if !self.is_success() {
+            return Err(ErrorHandler::ProcessingError(self.message.clone()));
+        }
+
+        let token_data = self.data.get("token").ok_or_else(|| {
+            ErrorHandler::ProcessingError("No 'token' field in API response".to_string())
+        })?;
+
+        serde_json::from_value(token_data.clone()).map_err(ErrorHandler::from)
     }
 }
