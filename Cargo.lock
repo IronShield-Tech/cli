@@ -1187,9 +1187,9 @@ dependencies = [
 
 [[package]]
 name = "ironshield-core"
-version = "0.1.11"
+version = "0.1.12"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "8f8f4982c75d9af922eeed1a53e8c38f04820a1ecbc322fbd3c0c9207f35c834"
+checksum = "b5ea88fcf9ff81cda39633ff316e94f36abd45bcb13a3075151261d8cf419fab"
 dependencies = [
  "base64",
  "chrono",
