@@ -29,7 +29,7 @@ use clap::{
 };
 
 use crate::client::{
-    client::IronShieldClient,
+    request::IronShieldClient,
     solve,
     validate
 };

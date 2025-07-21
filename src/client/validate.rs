@@ -2,7 +2,7 @@ use crate::{
     config::ClientConfig,
 };
 use crate::client::{
-    client::IronShieldClient,
+    request::IronShieldClient,
     solve,
 };
 use ironshield_api::handler::result::ResultHandler;
@@ -48,4 +48,4 @@ pub async fn validate_challenge(
     crate::verbose_log!(config, success, "Solution validated successfully!");
 
     Ok(token)
-} 
+}

@@ -1,5 +1,5 @@
-pub mod client;
-pub mod http_builder;
+pub mod request;
+pub mod http;
 pub mod response;
 pub mod solve;
 pub mod validate;
