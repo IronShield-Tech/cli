@@ -176,6 +176,7 @@ async fn solve_multithreaded(
             // Call ironshield-core's find_solution_multi_threaded function.
             ironshield_core::find_solution_multi_threaded(
                 &*challenge_clone,
+                Some(ironshield_core::PoWConfig::multi_threaded()), // Use optimized multi-threaded config
                 Some(thread_offset as usize),      // start_offset for this thread.
                 Some(thread_stride as usize),      // stride for optimal thread-stride pattern.
                 Some(&progress_callback),          // Progress callback for status updates.
@@ -300,7 +301,7 @@ async fn solve_single_threaded(
     // Use tokio::task::spawn_blocking to avoid blocking the async runtime.
     let handle = tokio::task::spawn_blocking(move || {
         // Use single-threaded function (progress callbacks not supported in single-threaded core).
-        ironshield_core::find_solution_single_threaded(&challenge)
+        ironshield_core::find_solution_single_threaded(&challenge, Some(ironshield_core::PoWConfig::single_threaded()))
     });
 
     match handle.await {
