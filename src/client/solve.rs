@@ -176,7 +176,6 @@ async fn solve_multithreaded(
             // Call ironshield-core's find_solution_multi_threaded function.
             ironshield_core::find_solution_multi_threaded(
                 &*challenge_clone,
-                None,                              // num_threads (not used in worker coordination).
                 Some(thread_offset as usize),      // start_offset for this thread.
                 Some(thread_stride as usize),      // stride for optimal thread-stride pattern.
                 Some(&progress_callback),          // Progress callback for status updates.
