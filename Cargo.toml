@@ -4,6 +4,9 @@ version = "0.1.7"
 description = "IronShield CLI component"
 authors = ["IronShield Developers <software@ironshield.cloud>"]
 respository = "https://github.com/IronShield-Tech/ironshield-cli"
+keywords = ["proof-of-work", "pow", "ddos", "cli", "crypto"]
+readme = ""README-crates.md""
+categories = ["cryptography", "algorithms", "concurrency"]
 license = "Apache-2.0"
 edition = "2021"
 
