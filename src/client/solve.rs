@@ -7,6 +7,8 @@ use crate::config::ClientConfig;
 
 use std::sync::{Arc, atomic::{AtomicBool, Ordering}};
 use std::time::Instant;
+use std::io::Write;
+use tokio::time::{interval, Duration};
 
 /// Configuration for proof-of-work challenge
 /// solving.
@@ -76,7 +78,22 @@ pub async fn solve_challenge(
     crate::verbose_kv!(config, "Multithreaded", solve_config.use_multithreaded);
     crate::verbose_kv!(config, "Recommended Attempts", challenge.recommended_attempts);
 
-    let start_time = Instant::now();
+    // Always show challenge difficulty info (both verbose and non-verbose modes)
+    let difficulty: u64 = challenge.recommended_attempts / 2; // recommended_attempts = difficulty * 2
+    println!("Solving proof-of-work challenge with difficulty {}", difficulty);
+
+    let start_time: Instant = Instant::now();
+    
+    // Start the progress animation (only in non-verbose mode)
+    let animation_running: Arc<AtomicBool> = Arc::new(AtomicBool::new(true));
+    let animation_handle: Option<JoinHandle<()>> = if !config.verbose {
+        let animation_running_clone: Arc<AtomicBool> = Arc::clone(&animation_running);
+        Some(tokio::spawn(async move {
+            show_progress_animation(animation_running_clone).await;
+        }))
+    } else {
+        None
+    };
 
     // Choose solving strategy based on configuration.
     let result = if solve_config.use_multithreaded && solve_config.thread_count > 1 {
@@ -84,6 +101,16 @@ pub async fn solve_challenge(
     } else {
         solve_single_threaded(challenge, config).await
     };
+
+    // Stop the animation and clean up the line
+    animation_running.store(false, Ordering::Relaxed);
+    if let Some(handle) = animation_handle {
+        let _ = handle.await; // Wait for animation to stop
+        if !config.verbose {
+            print!("\r\x1b[K"); // Clear the animation line
+            std::io::stdout().flush().unwrap_or(());
+        }
+    }
 
     // Log timing and performance metrics.
     match result {
@@ -111,16 +138,16 @@ fn log_solution_performance(
     solve_config: &SolveConfig,
     config:       &ClientConfig,
 ) {
-    let elapsed_millis = elapsed.as_millis() as u64;
+    let elapsed_millis: u64 = elapsed.as_millis() as u64;
 
     // Calculate estimated total attempts across all threads using thread-stride analysis.
     // In thread-stride: if thread T finds solution at nonce N, it has done roughly (N/thread_count) attempts.
     // Other threads have done roughly the same amount of work.
-    let solution_nonce = solution.solution as u64;
-    let estimated_attempts_per_thread = (solution_nonce / solve_config.thread_count as u64) + 1;
-    let estimated_total_attempts = estimated_attempts_per_thread * solve_config.thread_count as u64;
+    let solution_nonce: u64 = solution.solution as u64;
+    let estimated_attempts_per_thread: u64 = (solution_nonce / solve_config.thread_count as u64) + 1;
+    let estimated_total_attempts: u64 = estimated_attempts_per_thread * solve_config.thread_count as u64;
 
-    let hash_rate = if elapsed_millis > 0 {
+    let hash_rate: u64 = if elapsed_millis > 0 {
         (estimated_total_attempts * 1000) / elapsed_millis
     } else {
         estimated_total_attempts  // If solved instantly, assume 1ms.
@@ -153,19 +180,19 @@ async fn solve_multithreaded(
 ) -> ResultHandler<IronShieldChallengeResponse> {
     crate::verbose_log!(config, compute, "Starting multithreaded solve with {} threads", solve_config.thread_count);
 
-    let challenge = Arc::new(challenge);
-    let solution_found = Arc::new(AtomicBool::new(false));
-    let mut handles = Vec::new();
+    let challenge: Arc<IronShieldChallenge> = Arc::new(challenge);
+    let solution_found: Arc<AtomicBool> = Arc::new(AtomicBool::new(false));
+    let mut handles: Vec<JoinHandle<Result<IronShieldChallengeResponse, ErrorHandler>>> = Vec::new();
 
     // Spawn worker threads with proper stride and offset.
     for thread_id in 0..solve_config.thread_count {
-        let      challenge_clone = Arc::clone(&challenge);
-        let        thread_stride = solve_config.thread_count as u64;
-        let        thread_offset = thread_id as u64;
-        let         config_clone = config.clone();
-        let solution_found_clone = Arc::clone(&solution_found);
+        let      challenge_clone: Arc<IronShieldChallenge> = Arc::clone(&challenge);
+        let        thread_stride: u64 = solve_config.thread_count as u64;
+        let        thread_offset: u64 = thread_id as u64;
+        let         config_clone: ClientConfig = config.clone();
+        let solution_found_clone: Arc<AtomicBool> = Arc::clone(&solution_found);
 
-        let handle = tokio::task::spawn_blocking(move || {
+        let handle: JoinHandle<Result<IronShieldChallengeResponse, ErrorHandler>> = tokio::task::spawn_blocking(move || {
             // Create progress callback for status updates.
             let progress_callback = create_progress_callback(
                 thread_id,
@@ -180,7 +207,7 @@ async fn solve_multithreaded(
                 Some(thread_offset as usize),      // start_offset for this thread.
                 Some(thread_stride as usize),      // stride for optimal thread-stride pattern.
                 Some(&progress_callback),          // Progress callback for status updates.
-            ).map_err(|e| ErrorHandler::ProcessingError(format!(
+            ).map_err(|e: String| ErrorHandler::ProcessingError(format!(
                 "Thread {} failed: {}", thread_id, e
             )))
         });
@@ -198,8 +225,8 @@ fn create_progress_callback(
     config: ClientConfig,
     solution_found: Arc<AtomicBool>,
 ) -> impl Fn(u64) {
-    let thread_start_time = Instant::now();
-    let cumulative_attempts = Arc::new(std::sync::atomic::AtomicU64::new(0));
+    let thread_start_time: Instant = Instant::now();
+    let cumulative_attempts: Arc<std::sync::atomic::AtomicU64> = Arc::new(std::sync::atomic::AtomicU64::new(0));
 
     move |batch_attempts: u64| {
         // Stop reporting progress if solution already found by another thread.
@@ -208,13 +235,13 @@ fn create_progress_callback(
         }
 
         // Accumulate attempts (core callback provides batch size, not cumulative).
-        let total_attempts = cumulative_attempts.fetch_add(batch_attempts, Ordering::Relaxed) + batch_attempts;
+        let total_attempts: u64 = cumulative_attempts.fetch_add(batch_attempts, Ordering::Relaxed) + batch_attempts;
 
-        let elapsed = thread_start_time.elapsed();
-        let elapsed_millis = elapsed.as_millis() as u64;
+        let elapsed: Duration = thread_start_time.elapsed();
+        let elapsed_millis: u64 = elapsed.as_millis() as u64;
 
         // Calculate hash rate based on cumulative attempts.
-        let hash_rate = if elapsed_millis > 0 {
+        let hash_rate: u64 = if elapsed_millis > 0 {
             (total_attempts * 1000) / elapsed_millis
         } else {
             total_attempts  // If solved instantly, assume 1ms.
@@ -319,6 +346,25 @@ async fn solve_single_threaded(
                 "Single-threaded solve task failed: {}", e
             )))
         }
+    }
+}
+
+/// Shows a simple dot animation while the proof-of-work challenge is being solved
+async fn show_progress_animation(running: Arc<AtomicBool>) {
+    let mut timer: tokio::time::Interval = interval(Duration::from_millis(250));
+    let dots_patterns: [&'static str; 5] = ["...", "..", ".", "..", "..."];
+    let mut pattern_index: usize = 0;
+
+    // Skip the first tick (it fires immediately)
+    timer.tick().await;
+
+    while running.load(Ordering::Relaxed) {
+        print!("\r\x1b[KSolving {}", dots_patterns[pattern_index]);
+        std::io::stdout().flush().unwrap_or(());
+        
+        pattern_index = (pattern_index + 1) % dots_patterns.len();
+        
+        timer.tick().await;
     }
 }
 
