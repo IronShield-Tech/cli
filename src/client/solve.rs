@@ -80,7 +80,7 @@ pub async fn solve_challenge(
 
     // Always show challenge difficulty info (both verbose and non-verbose modes)
     let difficulty: u64 = challenge.recommended_attempts / 2; // recommended_attempts = difficulty * 2
-    println!("Solving proof-of-work challenge with difficulty {}", difficulty);
+    println!("Solving proof-of-work challenge with difficulty {}", format_number_with_commas(difficulty));
 
     let start_time: Instant = Instant::now();
     
@@ -347,6 +347,23 @@ async fn solve_single_threaded(
             )))
         }
     }
+}
+
+/// Formats a number with comma separators for better readability
+/// Example: 1234567 -> "1,234,567"
+fn format_number_with_commas(num: u64) -> String {
+    let num_str = num.to_string();
+    let mut result = String::new();
+    let chars: Vec<char> = num_str.chars().collect();
+    
+    for (i, ch) in chars.iter().enumerate() {
+        if i > 0 && (chars.len() - i) % 3 == 0 {
+            result.push(',');
+        }
+        result.push(*ch);
+    }
+    
+    result
 }
 
 /// Shows a simple dot animation while the proof-of-work challenge is being solved
