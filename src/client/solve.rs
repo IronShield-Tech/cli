@@ -192,7 +192,7 @@ async fn solve_multithreaded(
         let         config_clone: ClientConfig = config.clone();
         let solution_found_clone: Arc<AtomicBool> = Arc::clone(&solution_found);
 
-        let handle: JoinHandle<Result<IronShieldChallengeResponse, ErrorHandler>> = tokio::task::spawn_blocking(move || {
+        let handle = tokio::task::spawn_blocking(move || {
             // Create progress callback for status updates.
             let progress_callback = create_progress_callback(
                 thread_id,
