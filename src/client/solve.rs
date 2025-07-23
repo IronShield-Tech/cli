@@ -80,7 +80,7 @@ pub async fn solve_challenge(
 
     // Always show challenge difficulty info (both verbose and non-verbose modes)
     let difficulty: u64 = challenge.recommended_attempts / 2; // recommended_attempts = difficulty * 2
-    println!("Solving proof-of-work challenge with difficulty {}", format_number_with_commas(difficulty));
+    println!("Received proof-of-work challenge with difficulty {}", format_number_with_commas(difficulty));
 
     let start_time: Instant = Instant::now();
     
@@ -376,7 +376,7 @@ async fn show_progress_animation(running: Arc<AtomicBool>) {
     timer.tick().await;
 
     while running.load(Ordering::Relaxed) {
-        print!("\r\x1b[KSolving {}", dots_patterns[pattern_index]);
+        print!("\r\x1b[KSolving Challenge {}", dots_patterns[pattern_index]);
         std::io::stdout().flush().unwrap_or(());
         
         pattern_index = (pattern_index + 1) % dots_patterns.len();
