@@ -155,10 +155,13 @@ mod tests {
         assert!(handle.is_none(), "Animation should not start in verbose mode");
     }
 
-    #[test]
-    fn test_progress_animation_non_verbose_mode() {
+    #[tokio::test]
+    async fn test_progress_animation_non_verbose_mode() {
         let animation = ProgressAnimation::new(false);
         let handle = animation.start();
         assert!(handle.is_some(), "Animation should start in non-verbose mode");
+        
+        // Clean up the animation
+        animation.stop(handle).await;
     }
 } 
