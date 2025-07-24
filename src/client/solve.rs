@@ -4,11 +4,11 @@ use futures::future;
 use ironshield_api::handler::{error::ErrorHandler, result::ResultHandler};
 use ironshield_types::{IronShieldChallenge, IronShieldChallengeResponse};
 use crate::config::ClientConfig;
+use crate::client::display::{ProgressAnimation, format_number_with_commas};
 
 use std::sync::{Arc, atomic::{AtomicBool, Ordering}};
 use std::time::Instant;
-use std::io::Write;
-use tokio::time::{interval, Duration};
+use tokio::time::Duration;
 
 /// Configuration for proof-of-work challenge
 /// solving.
@@ -85,15 +85,8 @@ pub async fn solve_challenge(
     let start_time: Instant = Instant::now();
     
     // Start the progress animation (only in non-verbose mode)
-    let animation_running: Arc<AtomicBool> = Arc::new(AtomicBool::new(true));
-    let animation_handle: Option<JoinHandle<()>> = if !config.verbose {
-        let animation_running_clone: Arc<AtomicBool> = Arc::clone(&animation_running);
-        Some(tokio::spawn(async move {
-            show_progress_animation(animation_running_clone).await;
-        }))
-    } else {
-        None
-    };
+    let animation = ProgressAnimation::new(config.verbose);
+    let animation_handle = animation.start();
 
     // Choose solving strategy based on configuration.
     let result = if solve_config.use_multithreaded && solve_config.thread_count > 1 {
@@ -103,14 +96,7 @@ pub async fn solve_challenge(
     };
 
     // Stop the animation and clean up the line
-    animation_running.store(false, Ordering::Relaxed);
-    if let Some(handle) = animation_handle {
-        let _ = handle.await; // Wait for animation to stop
-        if !config.verbose {
-            print!("\r\x1b[K"); // Clear the animation line
-            std::io::stdout().flush().unwrap_or(());
-        }
-    }
+    animation.stop(animation_handle).await;
 
     // Log timing and performance metrics.
     match result {
@@ -349,41 +335,7 @@ async fn solve_single_threaded(
     }
 }
 
-/// Formats a number with comma separators for better readability
-/// Example: 1234567 -> "1,234,567"
-fn format_number_with_commas(num: u64) -> String {
-    let num_str = num.to_string();
-    let mut result = String::new();
-    let chars: Vec<char> = num_str.chars().collect();
-    
-    for (i, ch) in chars.iter().enumerate() {
-        if i > 0 && (chars.len() - i) % 3 == 0 {
-            result.push(',');
-        }
-        result.push(*ch);
-    }
-    
-    result
-}
 
-/// Shows a simple dot animation while the proof-of-work challenge is being solved
-async fn show_progress_animation(running: Arc<AtomicBool>) {
-    let mut timer: tokio::time::Interval = interval(Duration::from_millis(250));
-    let dots_patterns: [&'static str; 4] = ["|", "/", "—", "\\"];
-    let mut pattern_index: usize = 0;
-
-    // Skip the first tick (it fires immediately)
-    timer.tick().await;
-
-    while running.load(Ordering::Relaxed) {
-        print!("\r\x1b[KSolving Challenge {}", dots_patterns[pattern_index]);
-        std::io::stdout().flush().unwrap_or(());
-        
-        pattern_index = (pattern_index + 1) % dots_patterns.len(); 
-        
-        timer.tick().await;
-    }
-}
 
 #[cfg(test)]
 mod tests {
