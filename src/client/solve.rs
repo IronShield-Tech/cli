@@ -369,7 +369,7 @@ fn format_number_with_commas(num: u64) -> String {
 /// Shows a simple dot animation while the proof-of-work challenge is being solved
 async fn show_progress_animation(running: Arc<AtomicBool>) {
     let mut timer: tokio::time::Interval = interval(Duration::from_millis(250));
-    let dots_patterns: [&'static str; 5] = ["...", "..", ".", "..", "..."];
+    let dots_patterns: [&'static str; 4] = ["|", "/", "—", "\\"];
     let mut pattern_index: usize = 0;
 
     // Skip the first tick (it fires immediately)
@@ -379,7 +379,7 @@ async fn show_progress_animation(running: Arc<AtomicBool>) {
         print!("\r\x1b[KSolving Challenge {}", dots_patterns[pattern_index]);
         std::io::stdout().flush().unwrap_or(());
         
-        pattern_index = (pattern_index + 1) % dots_patterns.len();
+        pattern_index = (pattern_index + 1) % dots_patterns.len(); 
         
         timer.tick().await;
     }
