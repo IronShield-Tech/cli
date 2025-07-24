@@ -21,7 +21,7 @@ impl Default for ClientConfig {
     fn default() -> Self {
         Self {
             api_base_url: "https://api.ironshield.cloud".to_string(),
-            num_threads:  Some(num_cpus::get()), // Default to single-threaded.
+            num_threads:  None,
             timeout:      Duration::from_secs(30),
             user_agent:   crate::constant::USER_AGENT.to_string(),
             verbose:      false,
