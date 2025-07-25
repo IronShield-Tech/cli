@@ -1,7 +1,6 @@
 mod config;
 mod util;
 mod error;
-mod constant;
 mod display;
 mod commands;
 
