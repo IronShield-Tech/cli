@@ -59,11 +59,13 @@ async fn main() -> Result<()> {
         config.verbose = true
     };
 
+    crate::verbose_section!(config, "Client Initialization");
     let client: IronShieldClient = IronShieldClient::new(config.clone())?;
+    crate::verbose_log!(config, success, "Client initialized successfully.");
 
     match args.command {
         Commands::Fetch { endpoint, .. } => {
-            commands::fetch::handle_fetch(&client, &endpoint).await?;
+            commands::fetch::handle_fetch(&client, &config, &endpoint).await?;
         },
         Commands::Solve { endpoint, single_threaded, .. } => {
             commands::solve::handle_solve(&client, &config, &endpoint, single_threaded).await?;
