@@ -52,7 +52,7 @@ pub async fn solve_challenge_with_display(
     challenge: IronShieldChallenge,
     config: &ClientConfig,
     use_multithreaded: bool,
-) -> Result<IronShieldChallengeResponse, ironshield_api::handler::error::ErrorHandler> {
+) -> Result<IronShieldChallengeResponse, ironshield::ErrorHandler> {
     // Log configuration details
     crate::verbose_section!(config, "Challenge Solving");
     let solve_config = SolveConfig::new(config, use_multithreaded);

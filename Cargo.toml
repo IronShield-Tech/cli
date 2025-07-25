@@ -20,7 +20,6 @@ parallel = ["ironshield-core/parallel"]
 
 [dependencies]
 ironshield = { version = "0.1", features = ["parallel"] }
-ironshield-api = { version = "0.1" }
 ironshield-core = { version = "0.3", features = ["parallel"] }
 ironshield-types = { version = "0.2" }
 color-eyre = "0.6.3"
