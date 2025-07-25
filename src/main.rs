@@ -3,6 +3,7 @@ mod client;
 mod util;
 mod error;
 mod constant;
+mod display;
 
 use color_eyre::Result;
 use crossterm::event::{

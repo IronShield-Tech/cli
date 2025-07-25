@@ -4,7 +4,7 @@ use futures::future;
 use ironshield_api::handler::{error::ErrorHandler, result::ResultHandler};
 use ironshield_types::{IronShieldChallenge, IronShieldChallengeResponse};
 use crate::config::ClientConfig;
-use crate::client::display::{ProgressAnimation, format_number_with_commas};
+use crate::display::{ProgressAnimation, format_number_with_commas};
 
 use std::sync::{Arc, atomic::{AtomicBool, Ordering}};
 use std::time::Instant;
