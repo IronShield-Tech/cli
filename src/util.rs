@@ -128,6 +128,7 @@ macro_rules! verbose_section {
 #[cfg(test)]
 mod tests {
     use crate::config::ClientConfig;
+    use ironshield::USER_AGENT;
 
     #[test]
     fn test_verbose_macros() {
@@ -135,7 +136,7 @@ mod tests {
             api_base_url: "https://api.test.com".to_string(),
             num_threads: None,
             timeout: std::time::Duration::from_secs(30),
-            user_agent: crate::constant::USER_AGENT.to_string(),
+            user_agent: USER_AGENT.to_string(),
             verbose: true,
         };
 
@@ -143,7 +144,7 @@ mod tests {
             api_base_url: "https://api.test.com".to_string(),
             num_threads: None,
             timeout: std::time::Duration::from_secs(30),
-            user_agent: crate::constant::USER_AGENT.to_string(),
+            user_agent: USER_AGENT.to_string(),
             verbose: false,
         };
 

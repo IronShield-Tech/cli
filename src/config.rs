@@ -4,6 +4,7 @@ use serde::{
 };
 
 use crate::error::CliError;
+use ironshield::USER_AGENT;
 
 use std::time::Duration;
 
@@ -23,7 +24,7 @@ impl Default for ClientConfig {
             api_base_url: "https://api.ironshield.cloud".to_string(),
             num_threads:  None,
             timeout:      Duration::from_secs(30),
-            user_agent:   crate::constant::USER_AGENT.to_string(),
+            user_agent:   USER_AGENT.to_string(),
             verbose:      false,
         }
     }
@@ -129,7 +130,7 @@ impl ClientConfig {
             api_base_url: "https://localhost:3000".to_string(),
             num_threads:  Some(2), // Use limited threading for development.
             timeout:      Duration::from_secs(10),
-            user_agent:   crate::constant::USER_AGENT.to_string(),
+            user_agent:   USER_AGENT.to_string(),
             verbose:      true,
         }
     }
