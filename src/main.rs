@@ -1,5 +1,4 @@
 mod config;
-mod client;
 mod util;
 mod error;
 mod constant;
@@ -29,18 +28,16 @@ use clap::{
     Subcommand
 };
 
-use crate::client::{
-    request::IronShieldClient,
-    solve,
-    validate
-};
-use crate::{
-    config::ClientConfig,
-    error::CliError,
-};
-use ironshield_types::{
+use ironshield::{
+    IronShieldClient,
+    solve_challenge,
+    validate_challenge,
+    ClientConfig,
     IronShieldChallenge,
     IronShieldChallengeResponse
+};
+use crate::{
+    error::CliError,
 };
 
 #[tokio::main]
@@ -86,7 +83,7 @@ async fn main() -> Result<()> {
 
             // invert single_threaded flag to get use_multithreaded.
             let solution: IronShieldChallengeResponse =
-                solve::solve_challenge(challenge, &config, !single_threaded).await?;
+                solve_challenge(challenge, &config, !single_threaded).await?;
 
             println!("Challenge solved successfully!");
             println!("Solution: {:?}", solution);
@@ -95,7 +92,7 @@ async fn main() -> Result<()> {
         },
         Commands::Validate { endpoint, single_threaded, .. } => {
             let token =
-                validate::validate_challenge(&client, &config, &endpoint, !single_threaded)
+                validate_challenge(&client, &config, &endpoint, !single_threaded)
                     .await?;
 
             println!("Challenge validated successfully!");
