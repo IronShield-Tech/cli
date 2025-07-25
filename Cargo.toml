@@ -19,9 +19,9 @@ default = ["parallel"]
 parallel = ["ironshield-core/parallel"]
 
 [dependencies]
-ironshield = { version = "0.1", features = ["parallel"] }
-ironshield-core = { version = "0.3", features = ["parallel"] }
-ironshield-types = { version = "0.2" }
+ironshield = { path = "../ironshield-rs", version = "0.1", features = ["parallel"] }
+ironshield-core = { path = "../ironshield-core", version = "0.3", features = ["parallel"] }
+ironshield-types = { path = "../ironshield-types", version = "0.2" }
 color-eyre = "0.6.3"
 crossterm = { version = "0.29.0", features = ["event-stream"] }
 futures = "0.3.31"
