@@ -3,6 +3,7 @@ mod util;
 mod error;
 mod constant;
 mod display;
+mod commands;
 
 use color_eyre::Result;
 use crossterm::event::{
@@ -30,49 +31,9 @@ use clap::{
 
 use ironshield::{
     IronShieldClient,
-    solve_challenge,
-    validate_challenge,
     ClientConfig,
-    IronShieldChallenge,
-    IronShieldChallengeResponse
 };
-use crate::{
-    error::CliError,
-    display::{ProgressAnimation, format_number_with_commas}
-};
-
-/// CLI wrapper around the library's solve_challenge function that adds display logic
-async fn solve_challenge_with_display(
-    challenge: IronShieldChallenge,
-    config: &ClientConfig,
-    use_multithreaded: bool,
-) -> Result<IronShieldChallengeResponse, ironshield_api::handler::error::ErrorHandler> {
-    // Always show challenge difficulty info (both verbose and non-verbose modes)
-    let difficulty: u64 = challenge.recommended_attempts / 2; // recommended_attempts = difficulty * 2
-    println!("Received proof-of-work challenge with difficulty {}", format_number_with_commas(difficulty));
-
-    // Start the progress animation (only in non-verbose mode)
-    let animation = ProgressAnimation::new(config.verbose);
-    let animation_handle = animation.start();
-
-    // Call the library's solve function
-    let result = solve_challenge(challenge, config, use_multithreaded).await;
-
-    // Stop the animation and clean up the line
-    animation.stop(animation_handle).await;
-
-    // Print success message if the challenge was solved
-    match &result {
-        Ok(_) => {
-            println!("Challenge solved successfully!");
-        },
-        Err(_) => {
-            // Error will be handled by the caller
-        }
-    }
-
-    result
-}
+use crate::error::CliError;
 
 #[tokio::main]
 async fn main() -> Result<()> {
@@ -101,45 +62,18 @@ async fn main() -> Result<()> {
     let client: IronShieldClient = IronShieldClient::new(config.clone())?;
 
     match args.command {
-        // Calling !single_threaded is ok cuz it just falls back if you can't
-        // anyway.
-        // Great programming thanks ethan.
         Commands::Fetch { endpoint, .. } => {
-            let challenge = client.fetch_challenge(&endpoint).await?;
-            println!("Challenge fetched successfully!");
-            println!("Recommended attempts: {}", challenge.recommended_attempts);
-
-            std::process::exit(0);
+            commands::fetch::handle_fetch(&client, &endpoint).await?;
         },
         Commands::Solve { endpoint, single_threaded, .. } => {
-            let challenge: IronShieldChallenge = client.fetch_challenge(&endpoint).await?;
-            println!("Challenge fetched successfully!");
-
-            // invert single_threaded flag to get use_multithreaded.
-            let solution: IronShieldChallengeResponse =
-                solve_challenge_with_display(challenge, &config, !single_threaded).await?;
-
-            println!("Solution: {:?}", solution);
-
-            std::process::exit(0);
+            commands::solve::handle_solve(&client, &config, &endpoint, single_threaded).await?;
         },
         Commands::Validate { endpoint, single_threaded, .. } => {
-            // Fetch the challenge
-            let challenge = client.fetch_challenge(&endpoint).await?;
-            println!("Challenge fetched successfully!");
-
-            // Solve the challenge using our display wrapper
-            let solution = solve_challenge_with_display(challenge, &config, !single_threaded).await?;
-
-            // Submit the solution for validation
-            let token = client.submit_solution(&solution).await?;
-
-            println!("Challenge validated successfully!");
-            println!("Token: {:?}", token);
-
-            std::process::exit(0);
+            commands::validate::handle_validate(&client, &config, &endpoint, single_threaded).await?;
         }
     }
+
+    Ok(())
 }
 
 #[derive(Parser)]
