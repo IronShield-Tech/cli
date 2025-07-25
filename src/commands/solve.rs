@@ -4,10 +4,48 @@ use ironshield::{
     ClientConfig,
     IronShieldChallenge,
     IronShieldChallengeResponse,
-    SolveConfig
+    SolveConfig,
+    ProgressTracker
 };
 use crate::display::{ProgressAnimation, format_number_with_commas};
 use std::time::Instant;
+use std::sync::{Arc, Mutex};
+use std::collections::HashMap;
+
+/// Progress tracker that logs detailed per-thread progress with throttling
+struct VerboseProgressTracker {
+    last_logged: Mutex<HashMap<usize, u64>>,
+    thread_count: usize,
+}
+
+impl VerboseProgressTracker {
+    fn new(thread_count: usize) -> Self {
+        Self {
+            last_logged: Mutex::new(HashMap::new()),
+            thread_count,
+        }
+    }
+}
+
+impl ProgressTracker for VerboseProgressTracker {
+    fn on_progress(&self, thread_id: usize, total_attempts: u64, hash_rate: u64, _elapsed: std::time::Duration) {
+        let mut last_logged_map = self.last_logged.lock().unwrap();
+        let last_logged_attempts = last_logged_map.get(&thread_id).copied().unwrap_or(0);
+        
+        // Only log every 500,000 attempts to avoid spam
+        if total_attempts - last_logged_attempts >= 500_000 {
+            // Calculate estimated total attempts across all threads
+            let estimated_total_attempts = total_attempts * self.thread_count as u64;
+            let estimated_total_hash_rate = hash_rate * self.thread_count as u64;
+            
+            println!("COMPUTE: Total progress: {} total attempts across all threads ({} hashes/second)", 
+                format_number_with_commas(estimated_total_attempts), 
+                format_number_with_commas(estimated_total_hash_rate)
+            );
+            last_logged_map.insert(thread_id, total_attempts);
+        }
+    }
+}
 
 /// CLI wrapper around the library's solve_challenge function that adds display logic
 pub async fn solve_challenge_with_display(
@@ -22,6 +60,13 @@ pub async fn solve_challenge_with_display(
     crate::verbose_kv!(config, "Multithreaded", solve_config.use_multithreaded);
     crate::verbose_kv!(config, "Recommended Attempts", challenge.recommended_attempts);
 
+    // Log solving strategy
+    if solve_config.use_multithreaded && solve_config.thread_count > 1 {
+        crate::verbose_log!(config, compute, "Starting multithreaded solve with {} threads", solve_config.thread_count);
+    } else {
+        crate::verbose_log!(config, compute, "Starting single-threaded solve");
+    }
+
     // Always show challenge difficulty info (both verbose and non-verbose modes)
     let difficulty: u64 = challenge.recommended_attempts / 2; // recommended_attempts = difficulty * 2
     println!("Received proof-of-work challenge with difficulty {}", format_number_with_commas(difficulty));
@@ -32,8 +77,48 @@ pub async fn solve_challenge_with_display(
 
     let start_time = Instant::now();
 
-    // Call the library's solve function
-    let result = solve_challenge(challenge, config, use_multithreaded).await;
+    // For verbose mode, start a background task to show periodic progress
+    let verbose_progress_handle = if config.verbose {
+        let config_clone = config.clone();
+        let solve_config_clone = solve_config.clone();
+        let solve_start_time = start_time;
+        Some(tokio::spawn(async move {
+            let mut interval = tokio::time::interval(tokio::time::Duration::from_secs(2));
+            interval.tick().await; // Skip first immediate tick
+            
+            let mut iteration = 1;
+            loop {
+                interval.tick().await;
+                let elapsed = solve_start_time.elapsed();
+                crate::verbose_log!(
+                    config_clone,
+                    compute,
+                    "Solving progress: {} threads running for {:?} (iteration {})",
+                    solve_config_clone.thread_count,
+                    elapsed,
+                    iteration
+                );
+                iteration += 1;
+            }
+        }))
+    } else {
+        None
+    };
+
+    // Create progress tracker for detailed per-thread logging (throttled)
+    let progress_tracker = if config.verbose && solve_config.use_multithreaded {
+        Some(Arc::new(VerboseProgressTracker::new(solve_config.thread_count)) as Arc<dyn ProgressTracker>)
+    } else {
+        None
+    };
+
+    // Call the library's solve function with progress tracker
+    let result = solve_challenge(challenge, config, use_multithreaded, progress_tracker).await;
+
+    // Stop the verbose progress logging
+    if let Some(handle) = verbose_progress_handle {
+        handle.abort();
+    }
 
     // Stop the animation and clean up the line
     animation.stop(animation_handle).await;
@@ -42,6 +127,14 @@ pub async fn solve_challenge_with_display(
     match &result {
         Ok(solution) => {
             log_solution_performance(solution, start_time.elapsed(), &solve_config, config);
+            
+            // Log completion based on strategy used
+            if solve_config.use_multithreaded && solve_config.thread_count > 1 {
+                crate::verbose_log!(config, success, "Multithreaded solve completed successfully");
+            } else {
+                crate::verbose_log!(config, success, "Single-threaded solve completed successfully");
+            }
+            
             println!("Challenge solved successfully!");
         },
         Err(e) => {
