@@ -190,8 +190,21 @@ jobs:
   build-release-binaries:
     # Build release binaries after successful bump
     if: github.event_name == 'push' && github.ref == 'refs/heads/main'
-    runs-on: ubuntu-latest
+    runs-on: ${{ matrix.os }}
     needs: [bump]  # Wait for version bump and tag creation
+    
+    strategy:
+      matrix:
+        include:
+          - target: x86_64-unknown-linux-gnu
+            os: ubuntu-latest
+            name: x86_64-linux-gnu
+          - target: x86_64-apple-darwin
+            os: macos-latest
+            name: x86_64-apple-darwin
+          - target: aarch64-apple-darwin
+            os: macos-latest
+            name: aarch64-apple-darwin
     
     steps:
       # Checkout the repository at the new tag
@@ -204,24 +217,26 @@ jobs:
       - name: Setup Rust
         uses: dtolnay/rust-toolchain@stable
         with:
-          targets: x86_64-unknown-linux-gnu
+          targets: ${{ matrix.target }}
 
       # Cache Rust dependencies and compilation artifacts
       - name: Cache Rust Dependencies
         uses: Swatinem/rust-cache@v2
+        with:
+          key: ${{ matrix.target }}
 
       # Set version from bump job output
       - name: Set Version
         run: |
           VERSION=${{ needs.bump.outputs.new_version }}
           echo "VERSION=$VERSION" >> $GITHUB_ENV
-          echo "Building release for version: $VERSION"
+          echo "Building release for version: $VERSION on target: ${{ matrix.target }}"
 
-      # Build the binary for x86_64-unknown-linux-gnu
+      # Build the binary for the specific target
       - name: Build Release Binary
         run: |
-          echo "Building release binary for x86_64-unknown-linux-gnu..."
-          cargo build --release --target x86_64-unknown-linux-gnu --all-features
+          echo "Building release binary for ${{ matrix.target }}..."
+          cargo build --release --target ${{ matrix.target }} --all-features
           echo "Build completed successfully!"
 
       # Create release archive
@@ -229,8 +244,12 @@ jobs:
         run: |
           mkdir -p release-temp
           
-          # Copy the binary
-          cp target/x86_64-unknown-linux-gnu/release/ironshield release-temp/
+          # Copy the binary (handle Windows .exe extension if needed)
+          if [[ "${{ matrix.target }}" == *"windows"* ]]; then
+            cp target/${{ matrix.target }}/release/ironshield.exe release-temp/
+          else
+            cp target/${{ matrix.target }}/release/ironshield release-temp/
+          fi
           
           # Copy license and readme files
           cp LICENSE release-temp/
@@ -239,16 +258,16 @@ jobs:
           
           # Create the tar.gz archive with the specified naming format
           cd release-temp
-          tar -czf "../ironshield-cli-${{ env.VERSION }}-x86_64-linux.tar.gz" *
+          tar -czf "../ironshield-cli-${{ env.VERSION }}-${{ matrix.name }}.tar.gz" *
           cd ..
           
-          echo "Created archive: ironshield-cli-${{ env.VERSION }}-x86_64-linux.tar.gz"
+          echo "Created archive: ironshield-cli-${{ env.VERSION }}-${{ matrix.name }}.tar.gz"
           ls -la *.tar.gz
 
       # Upload binary as workflow artifact
       - name: Upload Release Binary
         uses: actions/upload-artifact@v4
         with:
-          name: ironshield-cli-${{ env.VERSION }}-x86_64-linux
-          path: ironshield-cli-${{ env.VERSION }}-x86_64-linux.tar.gz
+          name: ironshield-cli-${{ env.VERSION }}-${{ matrix.name }}
+          path: ironshield-cli-${{ env.VERSION }}-${{ matrix.name }}.tar.gz
           retention-days: 90
