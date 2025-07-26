@@ -1,0 +1,21 @@
+pkgbase = ironshield-git
+	pkgdesc = Command Line Tooling For IronShield Services (Git Version)
+	pkgver = r1.0.2.5
+	pkgrel = 1
+	url = https://github.com/IronShield-Tech/ironshield-cli
+	arch = x86_64
+	arch = aarch64
+	arch = i686
+	arch = armv7h
+	license = Apache-2.0
+	makedepends = git
+	makedepends = rust
+	makedepends = cargo
+	depends = glibc
+	provides = ironshield
+	conflicts = ironshield
+	conflicts = ironshield-bin
+	source = ironshield-git::git+https://github.com/IronShield-Tech/ironshield-cli.git
+	sha256sums = SKIP
+
+pkgname = ironshield-git 

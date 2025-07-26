@@ -1,0 +1,15 @@
+pkgbase = ironshield-bin
+	pkgdesc = Command Line Tooling For IronShield Services (Precompiled Binary)
+	pkgver = 0.2.5
+	pkgrel = 1
+	url = https://github.com/IronShield-Tech/ironshield-cli
+	arch = x86_64
+	license = Apache-2.0
+	depends = glibc
+	provides = ironshield
+	conflicts = ironshield
+	conflicts = ironshield-git
+	source_x86_64 = ironshield-bin-0.2.5-x86_64.tar.gz::https://github.com/IronShield-Tech/ironshield-cli/releases/download/v0.2.5/ironshield-v0.2.5-x86_64-unknown-linux-gnu.tar.gz
+	sha256sums_x86_64 = SKIP
+
+pkgname = ironshield-bin 

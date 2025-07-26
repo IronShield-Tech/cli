@@ -1,0 +1,29 @@
+# Maintainer: IronShield Developers <software@ironshield.cloud>
+pkgname=ironshield-bin
+pkgver=0.2.5
+pkgrel=1
+pkgdesc=" Command Line Tooling For IronShield Services (Precompiled Binary)"
+arch=('x86_64')
+url="https://github.com/IronShield-Tech/ironshield-cli"
+license=('Apache-2.0')
+depends=('glibc')
+provides=('ironshield')
+conflicts=('ironshield' 'ironshield-git')
+source_x86_64=("$pkgname-$pkgver-x86_64.tar.gz::$url/releases/download/v$pkgver/ironshield-v$pkgver-x86_64-unknown-linux-gnu.tar.gz")
+
+# Checksums will need to be updated for each release
+# Use 'makepkg -g' to generate checksums after uploading release assets
+sha256sums_x86_64=('SKIP')
+
+package() {
+    # Install the binary
+    install -Dm755 "$srcdir/ironshield" "$pkgdir/usr/bin/ironshield"
+    
+    # Install license
+    install -Dm644 "$srcdir/LICENSE" "$pkgdir/usr/share/licenses/$pkgname/LICENSE"
+    
+    # Install README if present
+    if [ -f "$srcdir/README.md" ]; then
+        install -Dm644 "$srcdir/README.md" "$pkgdir/usr/share/doc/$pkgname/README.md"
+    fi
+} 
