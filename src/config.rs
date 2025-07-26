@@ -1,205 +1,123 @@
-
-use ironshield::error::INVALID_ENDPOINT;
-use ironshield::USER_AGENT;
+use ironshield::ClientConfig;
 
 use crate::error::CliError;
 
-use serde::{
-    Deserialize,
-    Serialize
-};
-
-use std::time::Duration;
-
-#[derive(Debug, Clone, Serialize, Deserialize)]
-pub struct ClientConfig {
-    pub api_base_url: String,
-    pub num_threads:  Option<usize>,
-    #[serde(with = "duration_serde")]
-    pub timeout:      Duration,
-    pub user_agent:   String,
-    pub verbose:      bool,
-}
-
-impl Default for ClientConfig {
-    fn default() -> Self {
-        Self {
-            api_base_url: "https://api.ironshield.cloud".to_string(),
-            num_threads:  None,
-            timeout:      Duration::from_secs(30),
-            user_agent:   USER_AGENT.to_string(),
-            verbose:      false,
-        }
-    }
-}
+pub struct ConfigManager;
 
 #[allow(dead_code)]
-impl ClientConfig {
-    /// Loads a configuration file from a TOML file,
-    /// falling back to defaults if it is not present.
+impl ConfigManager {
+    /// Saves the current configuration to a TOML file.
+    ///
+    /// # Arguments
+    /// * `config`: The configuration to save.
+    /// * `path`:   Path to the configuration file save location.
+    ///
+    /// # Returns
+    /// * `Result<(), CliError>`: Indication of success or failure.
+    ///
+    /// # Example
+    /// ```
+    /// use ironshield::ClientConfig;
+    /// use ironshield_cli::config::ConfigManager;
+    ///
+    /// let config = ClientConfig::default();
+    /// ConfigManager::save_to_file(&config, "ironshield.toml")?;
+    /// # Ok::<(), Box<dyn std::error::Error>>(())
+    /// ```
+    pub fn save_to_file(config: &ClientConfig, path: &str) -> Result<(), CliError> {
+        config.validate()
+              .map_err(|e| CliError::config_error(
+                  format!("Cannot save invalid configuration: {}", e)
+              ))?;
+
+        let content = toml::to_string_pretty(config)
+            .map_err(|e| CliError::config_error(
+                format!("Failed to serialize config to TOML: {}", e)
+            ))?;
+
+        std::fs::write(path, content)
+            .map_err(|e| CliError::Io(e))?;
+
+        Ok(())
+    }
+
+    pub fn create_default_config(
+        path: &str
+    ) -> Result<ClientConfig, CliError> {
+        let config = ClientConfig::default();
+        Self::save_to_file(&config, path)?;
+
+        println!("Created default configuration file at '{}'", path);
+        Ok(config)
+    }
+
+    /// Validate an existing configuration file.
     ///
     /// # Arguments
     /// * `path`: The path to the TOML configuration file.
     ///
     /// # Returns
-    /// * `Result<Self, CliError>`: containing the loaded
-    ///                             configuration, or an
-    ///                             error if parsing fails.
-    ///
-    /// # Examples
-    /// ```
-    /// // Load from default location.
-    /// let config = ClientConfig::from_file("ironshield.toml")?;
-    ///
-    /// // Load from custom location.
-    /// let config = ClientConfig::from_file("/etc/ironshield/config.toml")?;
-    /// ```
-    pub fn from_file(path: &str) -> Result<Self, CliError> {
-        match std::fs::read_to_string(path) {
-            Ok(content) => {
-                let config: Self = toml::from_str(&content)?;
-
-                config.validate()?;
-
-                Ok(config)
-            }
-            Err(err) => { // File doesn't exist, use the default configuration.
-                if err.kind() == std::io::ErrorKind::NotFound {
-                    eprintln!("Config file '{}' not found, using default configuration.", path);
-                    Ok(Self::default())
-                } else {
-                    Err(CliError::Io(err))
-                }
-            }
-        }
-    }
-
-    /// Saves the current configuration to a TOML file.
-    ///
-    /// # Arguments
-    /// * `path`: Path to the configuration file save location.
-    ///
-    /// # Returns
     /// * `Result<(), CliError>`: Indication of success or failure.
-    ///
-    /// # Examples
-    /// ```
-    /// let config = ClientConfig::default();
-    /// config.save_to_file("ironshield.toml")?;
-    /// ```
-    pub fn save_to_file(&self, path: &str) -> Result<(), CliError> {
-        self.validate()?;
+    pub fn validate_config_file(path: &str) -> Result<(), CliError> {
+        let content = std::fs::read_to_string(path)
+            .map_err(|e| CliError::Io(e))?;
 
-        let content = toml::to_string_pretty(self)
-            .map_err(|e| CliError::config_error(format!("Failed to serialize config: {}", e)))?;
+        let config: ClientConfig = toml::from_str(&content)
+            .map_err(|e| CliError::config_error(
+                format!("Failed to parse TOML config file '{}': {}", path, e)
+            ))?;
 
-        std::fs::write(path, content)?;
+        config.validate()
+              .map_err(|e| CliError::config_error(
+                  format!("Configuration validation failed: {}", e)
+              ))?;
 
         Ok(())
     }
 
-    /// Validates the configuration.
+    /// Loads configuration from a file and applies command-line overrides.
+    ///
+    /// At the moment, the only override supported is the `verbose` setting.
+    ///
+    /// # Arguments
+    /// * `path`:             Optional path to a configuration file.
+    /// * `verbose_override`: Override verbose setting from the command line.
     ///
     /// # Returns
-    /// * `Result<(), CliError>`: Indication of success or failure.
-    fn validate(&self) -> Result<(), CliError> {
-        let timeout_secs = self.timeout.as_secs();
-
-        if !self.api_base_url.starts_with("https://") {
-            return Err(CliError::config_error(
-                INVALID_ENDPOINT
-            ))
-        }
-
-        if timeout_secs < 1 || timeout_secs > 600 {
-            return Err(CliError::config_error(
-                "Timeout must be between 1 seconds and 10 minutes."
-            ))
-        }
-
-        if let Some(threads) = self.num_threads {
-            if threads == 0 {
-                return Err(CliError::config_error(
-                    "Thread count must be greater than 0."
-                ))
+    /// * `Result<ClientConfig, CliError>`: The final configuration with overrides
+    ///                                     applied.
+    ///
+    /// # Example
+    /// ```
+    /// use ironshield_cli::config::ConfigManager;
+    ///
+    /// // Load with verbose override.
+    /// let config = ConfigManager::load_with_overrides(
+    ///     Some("ironshield.toml".to_string()),
+    ///     Some(true)
+    /// )?;
+    /// # Ok::<(), Box<dyn std::error::Error>>(())
+    /// ```
+    pub fn load_with_overrides(
+        path: Option<String>,
+        verbose_override: Option<bool>,
+    ) -> Result<ClientConfig, CliError> {
+        let mut config = match path {
+            Some(config_path) => {
+                ClientConfig::from_file(&config_path)
+                    .map_err(|e| CliError::config_error(format!("Failed to load config: {}", e)))?
             }
+            None => {
+                println!("No config file specified, using default configuration.");
+                ClientConfig::default()
+            }
+        };
+        
+        if let Some(verbose) = verbose_override {
+            config.set_verbose(verbose);
         }
 
-        Ok(())
-    }
-
-    pub fn development() -> Self {
-        Self {
-            api_base_url: "https://localhost:3000".to_string(),
-            num_threads:  Some(2), // Use limited threading for development.
-            timeout:      Duration::from_secs(10),
-            user_agent:   USER_AGENT.to_string(),
-            verbose:      true,
-        }
-    }
-}
-
-/// Custom serialization/deserialization for `Duration` fields.
-///
-/// Provides serde support for `Duration` fields,
-/// serializes them as seconds (u64) in TOML files
-/// for human readability while maintaining type safety.
-mod duration_serde {
-    use serde::{
-        Deserialize,
-        Deserializer,
-        Serializer
-    };
-    use std::time::Duration;
-
-    /// Serializes a `Duration` as seconds.
-    ///
-    /// # Arguments
-    /// * `duration`:   Duration to serialize.
-    /// * `serializer`: The serde serializer.
-    ///
-    /// # Returns
-    /// * `Result<S::Ok, S::Error>`: The serialized duration as an
-    ///                              `u64` representing seconds on
-    ///                              success, or a serialization
-    ///                              error on failure.
-    ///
-    /// # Type Parameters
-    /// * `S`: The serializer type that implements the `Serializer`
-    ///        trait.
-    pub fn serialize<S>(
-        duration: &Duration,
-        serializer: S
-    ) -> Result<S::Ok, S::Error>
-    where
-        S: Serializer,
-    {
-        serializer.serialize_u64(duration.as_secs())
-    }
-
-    /// Deserializes a duration from seconds.
-    ///
-    /// # Arguments
-    /// * `deserializer`: The serde deserializer.
-    ///
-    /// # Returns
-    /// * `Result<Duration, D::Error>`: A `Duration` constructed
-    ///                                 from the deserialized seconds
-    ///                                 value on success, or a
-    ///                                 deserialization error if the
-    ///                                 operation fails.
-    ///
-    /// # Type Parameters
-    /// * `D`: The deserializer type that implements the `Deserializer`
-    ///        trait.
-    pub fn deserialize<'de, D>(
-        deserializer: D
-    ) -> Result<Duration, D::Error>
-    where
-        D: Deserializer<'de>,
-    {
-        let secs = u64::deserialize(deserializer)?;
-        Ok(Duration::from_secs(secs))
+        Ok(config)
     }
 }
 
@@ -207,33 +125,7 @@ mod duration_serde {
 mod tests {
     use super::*;
     use tempfile::tempdir;
-
-    #[test]
-    fn test_default_config_is_valid() {
-        let config = ClientConfig::default();
-        assert!(config.validate().is_ok());
-    }
-
-    #[test]
-    fn test_config_validation_invalid_url() {
-        let mut config = ClientConfig::default();
-        config.api_base_url = "http://insecure.example.com".to_string();
-        assert!(config.validate().is_err());
-    }
-
-    #[test]
-    fn test_config_validation_invalid_timeout() {
-        let mut config = ClientConfig::default();
-        config.timeout = Duration::from_secs(0);
-        assert!(config.validate().is_err());
-    }
-
-    #[test]
-    fn test_config_validation_invalid_threads() {
-        let mut config = ClientConfig::default();
-        config.num_threads = Some(0);
-        assert!(config.validate().is_err());
-    }
+    use std::time::Duration;
 
     #[test]
     fn test_config_roundtrip() {
@@ -241,15 +133,21 @@ mod tests {
         let file_path = dir.path().join("test_config.toml");
         let file_path_str = file_path.to_str().unwrap();
 
-        let original_config = ClientConfig::development();
-        original_config.save_to_file(file_path_str).unwrap();
+        // Create a custom configuration.
+        let mut original_config = ClientConfig::default();
+        original_config.set_verbose(true);
+        original_config.set_timeout(Duration::from_secs(45)).unwrap();
 
+        // Save and reload.
+        ClientConfig::save_to_file(&original_config, file_path_str).unwrap();
         let loaded_config = ClientConfig::from_file(file_path_str).unwrap();
 
+        // Verify roundtrip accuracy.
         assert_eq!(original_config.api_base_url, loaded_config.api_base_url);
         assert_eq!(original_config.timeout, loaded_config.timeout);
         assert_eq!(original_config.verbose, loaded_config.verbose);
         assert_eq!(original_config.num_threads, loaded_config.num_threads);
+        assert_eq!(original_config.user_agent, loaded_config.user_agent);
     }
 
     #[test]
@@ -260,5 +158,79 @@ mod tests {
         let config = result.unwrap();
         let default_config = ClientConfig::default();
         assert_eq!(config.api_base_url, default_config.api_base_url);
+    }
+
+    #[test]
+    fn test_invalid_toml_returns_error() {
+        let dir = tempdir().unwrap();
+        let file_path = dir.path().join("invalid_config.toml");
+        let file_path_str = file_path.to_str().unwrap();
+
+        // Write invalid TOML.
+        std::fs::write(file_path_str, "invalid toml content [[[").unwrap();
+
+        let result = ClientConfig::from_file(file_path_str);
+        assert!(result.is_err());
+    }
+
+    #[test]
+    fn test_invalid_config_values_return_error() {
+        let dir = tempdir().unwrap();
+        let file_path = dir.path().join("invalid_values_config.toml");
+        let file_path_str = file_path.to_str().unwrap();
+
+        // Write TOML with invalid configuration values.
+        let invalid_toml = r#"
+        api_base_url = ""
+        timeout = 0
+        verbose = false
+        "#;
+        std::fs::write(file_path_str, invalid_toml).unwrap();
+
+        let result = ClientConfig::from_file(file_path_str);
+        assert!(result.is_err());
+    }
+
+    #[test]
+    fn test_create_default_config() {
+        let dir = tempdir().unwrap();
+        let file_path = dir.path().join("default_config.toml");
+        let file_path_str = file_path.to_str().unwrap();
+
+        let config = ConfigManager::create_default_config(file_path_str).unwrap();
+
+        // Verify file was created and is valid.
+        assert!(file_path.exists());
+        let loaded_config = ClientConfig::from_file(file_path_str).unwrap();
+        assert_eq!(config.api_base_url, loaded_config.api_base_url);
+    }
+
+    #[test]
+    fn test_validate_config_file_valid() {
+        let dir = tempdir().unwrap();
+        let file_path = dir.path().join("valid_config.toml");
+        let file_path_str = file_path.to_str().unwrap();
+
+        // Create valid configuration file.
+        let config = ClientConfig::default();
+        ConfigManager::save_to_file(&config, file_path_str).unwrap();
+
+        // Validation should succeed.
+        let result = ConfigManager::validate_config_file(file_path_str);
+        assert!(result.is_ok());
+    }
+
+    #[test]
+    fn test_validate_config_file_invalid() {
+        let dir = tempdir().unwrap();
+        let file_path = dir.path().join("invalid_config.toml");
+        let file_path_str = file_path.to_str().unwrap();
+
+        // Write invalid TOML.
+        std::fs::write(file_path_str, "invalid toml [[[").unwrap();
+
+        // Validation should fail.
+        let result = ConfigManager::validate_config_file(file_path_str);
+        assert!(result.is_err());
     }
 }

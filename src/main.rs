@@ -32,6 +32,7 @@ use ironshield::{
     IronShieldClient,
     ClientConfig,
 };
+use crate::config::ConfigManager;
 use crate::error::CliError;
 
 #[tokio::main]
@@ -40,27 +41,21 @@ async fn main() -> Result<()> {
 
     let args: CliArgs = CliArgs::parse()?;
 
-    let (config_path, verbose) = match &args.command {
-        Commands::Fetch    { config_path, verbose, .. } => (config_path, *verbose),
-        Commands::Solve    { config_path, verbose, .. } => (config_path, *verbose),
-        Commands::Validate { config_path, verbose, .. } => (config_path, *verbose),
+    let (config_path, verbose_override) = match &args.command {
+        Commands::Fetch { config_path, verbose, .. }    => (config_path.clone(), Some(*verbose || args.verbose)),
+        Commands::Solve { config_path, verbose, .. }    => (config_path.clone(), Some(*verbose || args.verbose)),
+        Commands::Validate { config_path, verbose, .. } => (config_path.clone(), Some(*verbose || args.verbose)),
     };
 
-    let mut config: ClientConfig = match config_path {
-        Some(path) => ClientConfig::from_file(&path)?,
-        None => {
-            println!("No config file specified, using default configuration.");
-            ClientConfig::default()
-        }
-    };
+    // Load configuration with CLI overrides using the new ConfigManager.
+    let config: ClientConfig = ConfigManager::load_with_overrides(
+        config_path,
+        verbose_override,
+    )?;
 
-    if verbose || args.verbose {
-        config.verbose = true
-    };
-
-    crate::verbose_section!(config, "Client Initialization");
+    verbose_section!(config, "Client Initialization");
     let client: IronShieldClient = IronShieldClient::new(config.clone())?;
-    crate::verbose_log!(config, success, "Client initialized successfully.");
+    verbose_log!(config, success, "Client initialized successfully.");
 
     match args.command {
         Commands::Fetch { endpoint, .. } => {
@@ -203,7 +198,7 @@ impl App {
         Self::default()
     }
 
-    /// Run the application's main loop for TUI interface.
+    /// Run the application's main loop for the TUI interface.
     pub async fn run(mut self, mut terminal: DefaultTerminal) -> Result<()> {
         self.running = true;
         while self.running {
