@@ -1,10 +1,13 @@
+
+use ironshield::error::INVALID_ENDPOINT;
+use ironshield::USER_AGENT;
+
+use crate::error::CliError;
+
 use serde::{
     Deserialize,
     Serialize
 };
-
-use crate::error::CliError;
-use ironshield::USER_AGENT;
 
 use std::time::Duration;
 
@@ -60,7 +63,7 @@ impl ClientConfig {
 
                 Ok(config)
             }
-            Err(err) => { // File doesn't exist, use default configuration.
+            Err(err) => { // File doesn't exist, use the default configuration.
                 if err.kind() == std::io::ErrorKind::NotFound {
                     eprintln!("Config file '{}' not found, using default configuration.", path);
                     Ok(Self::default())
@@ -104,7 +107,7 @@ impl ClientConfig {
 
         if !self.api_base_url.starts_with("https://") {
             return Err(CliError::config_error(
-                ironshield::INVALID_ENDPOINT
+                INVALID_ENDPOINT
             ))
         }
 

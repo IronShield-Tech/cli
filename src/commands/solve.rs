@@ -1,13 +1,16 @@
 use ironshield::{
-    IronShieldClient,
-    solve_challenge,
-    ClientConfig,
-    IronShieldChallenge,
-    IronShieldChallengeResponse,
-    SolveConfig,
-    ProgressTracker
+    IronShieldClient, 
+    solve_challenge, 
+    ClientConfig, 
+    IronShieldChallenge, 
+    IronShieldChallengeResponse, 
+    SolveConfig, 
+    ProgressTracker,
+    error::ErrorHandler
 };
+
 use crate::display::{ProgressAnimation, format_number_with_commas};
+
 use std::time::Instant;
 use std::sync::{Arc, Mutex};
 use std::collections::HashMap;
@@ -52,7 +55,7 @@ pub async fn solve_challenge_with_display(
     challenge: IronShieldChallenge,
     config: &ClientConfig,
     use_multithreaded: bool,
-) -> Result<IronShieldChallengeResponse, ironshield::ErrorHandler> {
+) -> Result<IronShieldChallengeResponse, ErrorHandler> {
     // Log configuration details
     crate::verbose_section!(config, "Challenge Solving");
     let solve_config = SolveConfig::new(config, use_multithreaded);
@@ -84,7 +87,7 @@ pub async fn solve_challenge_with_display(
         let solve_start_time = start_time;
         Some(tokio::spawn(async move {
             let mut interval = tokio::time::interval(tokio::time::Duration::from_secs(2));
-            interval.tick().await; // Skip first immediate tick
+            interval.tick().await; // Skip the first immediate tick
             
             let mut iteration = 1;
             loop {
@@ -105,30 +108,26 @@ pub async fn solve_challenge_with_display(
         None
     };
 
-    // Create progress tracker for detailed per-thread logging (throttled)
+    // Create a progress tracker for detailed per-thread logging (throttled).
     let progress_tracker = if config.verbose && solve_config.use_multithreaded {
         Some(Arc::new(VerboseProgressTracker::new(solve_config.thread_count)) as Arc<dyn ProgressTracker>)
     } else {
         None
     };
-
-    // Call the library's solve function with progress tracker
+    
     let result = solve_challenge(challenge, config, use_multithreaded, progress_tracker).await;
-
-    // Stop the verbose progress logging
+    
     if let Some(handle) = verbose_progress_handle {
         handle.abort();
     }
 
-    // Stop the animation and clean up the line
+    // Stop the animation and clean up the line.
     animation.stop(animation_handle).await;
 
     // Log timing and performance metrics
     match &result {
         Ok(solution) => {
             log_solution_performance(solution, start_time.elapsed(), &solve_config, config);
-            
-            // Log completion based on strategy used
             if solve_config.use_multithreaded && solve_config.thread_count > 1 {
                 crate::verbose_log!(config, success, "Multithreaded solve completed successfully");
             } else {
