@@ -7,6 +7,8 @@ on:
       - main
       - master
       - develop
+    tags:
+      - 'v*'
 
 env:
   CARGO_TERM_COLOR: always
@@ -161,3 +163,67 @@ jobs:
         env:
           CARGO_REGISTRY_TOKEN: ${{ secrets.CARGO_REGISTRY_TOKEN }}
         run: cargo publish
+
+  build-release-binaries:
+    # Only build release binaries when a version tag is pushed
+    if: github.event_name == 'push' && startsWith(github.ref, 'refs/tags/v')
+    runs-on: ubuntu-latest
+    needs: [clippy, doc, test]  # Wait for CI to pass before building release
+    
+    steps:
+      # Checkout the repository
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      # Setup Rust with the target
+      - name: Setup Rust
+        uses: dtolnay/rust-toolchain@stable
+        with:
+          targets: x86_64-unknown-linux-gnu
+
+      # Cache Rust dependencies and compilation artifacts
+      - name: Cache Rust Dependencies
+        uses: Swatinem/rust-cache@v2
+
+      # Extract version from tag
+      - name: Extract Version
+        run: |
+          VERSION=${GITHUB_REF#refs/tags/v}
+          echo "VERSION=$VERSION" >> $GITHUB_ENV
+          echo "Building release for version: $VERSION"
+
+      # Build the binary for x86_64-unknown-linux-gnu
+      - name: Build Release Binary
+        run: |
+          echo "Building release binary for x86_64-unknown-linux-gnu..."
+          cargo build --release --target x86_64-unknown-linux-gnu --all-features
+          echo "Build completed successfully!"
+
+      # Create release archive
+      - name: Create Release Archive
+        run: |
+          mkdir -p release-temp
+          
+          # Copy the binary
+          cp target/x86_64-unknown-linux-gnu/release/ironshield release-temp/
+          
+          # Copy license and readme files
+          cp LICENSE release-temp/
+          cp README.md release-temp/
+          cp README-crates.md release-temp/
+          
+          # Create the tar.gz archive with the specified naming format
+          cd release-temp
+          tar -czf "../ironshield-v${{ env.VERSION }}-x86_64-unknown-linux-gnu.tar.gz" *
+          cd ..
+          
+          echo "Created archive: ironshield-v${{ env.VERSION }}-x86_64-unknown-linux-gnu.tar.gz"
+          ls -la *.tar.gz
+
+      # Upload binary as workflow artifact
+      - name: Upload Release Binary
+        uses: actions/upload-artifact@v4
+        with:
+          name: ironshield-v${{ env.VERSION }}-x86_64-unknown-linux-gnu
+          path: ironshield-v${{ env.VERSION }}-x86_64-unknown-linux-gnu.tar.gz
+          retention-days: 90
