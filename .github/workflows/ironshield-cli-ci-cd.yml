@@ -239,16 +239,16 @@ jobs:
           
           # Create the tar.gz archive with the specified naming format
           cd release-temp
-          tar -czf "../ironshield-v${{ env.VERSION }}-x86_64-unknown-linux-gnu.tar.gz" *
+          tar -czf "../ironshield-cli-${{ env.VERSION }}-x86_64-linux.tar.gz" *
           cd ..
           
-          echo "Created archive: ironshield-v${{ env.VERSION }}-x86_64-unknown-linux-gnu.tar.gz"
+          echo "Created archive: ironshield-cli-${{ env.VERSION }}-x86_64-linux.tar.gz"
           ls -la *.tar.gz
 
       # Upload binary as workflow artifact
       - name: Upload Release Binary
         uses: actions/upload-artifact@v4
         with:
-          name: ironshield-v${{ env.VERSION }}-x86_64-unknown-linux-gnu
-          path: ironshield-v${{ env.VERSION }}-x86_64-unknown-linux-gnu.tar.gz
+          name: ironshield-cli-${{ env.VERSION }}-x86_64-linux
+          path: ironshield-cli-${{ env.VERSION }}-x86_64-linux.tar.gz
           retention-days: 90
