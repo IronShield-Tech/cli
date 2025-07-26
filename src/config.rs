@@ -1,6 +1,5 @@
 use ironshield::ClientConfig;
-
-use crate::error::CliError;
+use ironshield::error::ErrorHandler;
 
 pub struct ConfigManager;
 
@@ -13,7 +12,7 @@ impl ConfigManager {
     /// * `path`:   Path to the configuration file save location.
     ///
     /// # Returns
-    /// * `Result<(), CliError>`: Indication of success or failure.
+    /// * `Result<(), ErrorHandler>`: Indication of success or failure.
     ///
     /// # Example
     /// ```
@@ -24,30 +23,30 @@ impl ConfigManager {
     /// ConfigManager::save_to_file(&config, "ironshield.toml")?;
     /// # Ok::<(), Box<dyn std::error::Error>>(())
     /// ```
-    pub fn save_to_file(config: &ClientConfig, path: &str) -> Result<(), CliError> {
+    pub fn save_to_file(config: &ClientConfig, path: &str) -> Result<(), ErrorHandler> {
         config.validate()
-              .map_err(|e| CliError::config_error(
-                  format!("Cannot save invalid configuration: {}", e)
+              .map_err(|e| ErrorHandler::config_error(
+                  format!("Cannot save invalid configuration: {e}")
               ))?;
 
         let content = toml::to_string_pretty(config)
-            .map_err(|e| CliError::config_error(
-                format!("Failed to serialize config to TOML: {}", e)
+            .map_err(|e| ErrorHandler::config_error(
+                format!("Failed to serialize config to TOML: {e}")
             ))?;
 
         std::fs::write(path, content)
-            .map_err(|e| CliError::Io(e))?;
+            .map_err(ErrorHandler::Io)?;
 
         Ok(())
     }
 
     pub fn create_default_config(
         path: &str
-    ) -> Result<ClientConfig, CliError> {
+    ) -> Result<ClientConfig, ErrorHandler> {
         let config = ClientConfig::default();
         Self::save_to_file(&config, path)?;
 
-        println!("Created default configuration file at '{}'", path);
+        println!("Created default configuration file at '{path}'");
         Ok(config)
     }
 
@@ -57,19 +56,19 @@ impl ConfigManager {
     /// * `path`: The path to the TOML configuration file.
     ///
     /// # Returns
-    /// * `Result<(), CliError>`: Indication of success or failure.
-    pub fn validate_config_file(path: &str) -> Result<(), CliError> {
+    /// * `Result<(), ErrorHandler>`: Indication of success or failure.
+    pub fn validate_config_file(path: &str) -> Result<(), ErrorHandler> {
         let content = std::fs::read_to_string(path)
-            .map_err(|e| CliError::Io(e))?;
+            .map_err(ErrorHandler::Io)?;
 
         let config: ClientConfig = toml::from_str(&content)
-            .map_err(|e| CliError::config_error(
-                format!("Failed to parse TOML config file '{}': {}", path, e)
+            .map_err(|e| ErrorHandler::config_error(
+                format!("Failed to parse TOML config file '{path}': {e}")
             ))?;
 
         config.validate()
-              .map_err(|e| CliError::config_error(
-                  format!("Configuration validation failed: {}", e)
+              .map_err(|e| ErrorHandler::config_error(
+                  format!("Configuration validation failed: {e}")
               ))?;
 
         Ok(())
@@ -84,8 +83,8 @@ impl ConfigManager {
     /// * `verbose_override`: Override verbose setting from the command line.
     ///
     /// # Returns
-    /// * `Result<ClientConfig, CliError>`: The final configuration with overrides
-    ///                                     applied.
+    /// * `Result<ClientConfig, ErrorHandler>`: The final configuration with overrides
+    ///                                         applied.
     ///
     /// # Example
     /// ```
@@ -101,11 +100,11 @@ impl ConfigManager {
     pub fn load_with_overrides(
         path: Option<String>,
         verbose_override: Option<bool>,
-    ) -> Result<ClientConfig, CliError> {
+    ) -> Result<ClientConfig, ErrorHandler> {
         let mut config = match path {
             Some(config_path) => {
                 ClientConfig::from_file(&config_path)
-                    .map_err(|e| CliError::config_error(format!("Failed to load config: {}", e)))?
+                    .map_err(|e| ErrorHandler::config_error(format!("Failed to load config: {e}")))?
             }
             None => {
                 println!("No config file specified, using default configuration.");

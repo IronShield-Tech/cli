@@ -15,7 +15,8 @@ macro_rules! verbose_println {
     };
 }
 
-/// Macro for verbose printing without newline that only prints if verbose mode is enabled.
+/// Macro for verbose printing without a newline that only 
+/// prints if verbose mode is enabled.
 ///
 /// # Example
 /// ```

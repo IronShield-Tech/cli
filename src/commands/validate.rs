@@ -54,7 +54,7 @@ pub async fn handle_validate(
     crate::verbose_log!(config, success, "Token generated successfully!");
     crate::verbose_kv!(config, "Token Valid Until", token.valid_for);
 
-    println!("Token: {:?}", token);
+    println!("Token: {token:?}");
 
     std::process::exit(0);
 } 

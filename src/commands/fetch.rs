@@ -1,7 +1,6 @@
 use ironshield::{IronShieldClient, ClientConfig};
 use std::time::Instant;
 
-/// Handles the fetch command - fetches a challenge from the specified endpoint
 pub async fn handle_fetch(
     client: &IronShieldClient, 
     config: &ClientConfig,

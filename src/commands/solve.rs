@@ -219,7 +219,7 @@ pub async fn handle_solve(
     // invert single_threaded flag to get use_multithreaded.
     let solution = solve_challenge_with_display(challenge, config, !single_threaded).await?;
 
-    println!("Solution: {:?}", solution);
+    println!("Solution: {solution:?}");
 
     std::process::exit(0);
 } 

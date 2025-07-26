@@ -1,12 +1,15 @@
 use tokio::task::JoinHandle;
 use tokio::time::{interval, Duration};
-use std::sync::{Arc, atomic::{AtomicBool, Ordering}};
+
+use std::sync::{
+    Arc, 
+    atomic::{
+        AtomicBool, 
+        Ordering
+    }
+};
 use std::io::Write;
 
-/// A progress animation that shows a spinning indicator during long-running operations.
-/// 
-/// The animation only displays when not in verbose mode, allowing for clean output
-/// during normal operation while preserving detailed logging when needed.
 pub struct ProgressAnimation {
     running: Arc<AtomicBool>,
     verbose: bool,
@@ -16,10 +19,12 @@ impl ProgressAnimation {
     /// Creates a new progress animation.
     ///
     /// # Arguments
-    /// * `verbose` - If true, the animation will not be displayed to avoid interfering with verbose output
+    /// * `verbose`: If `true`, the animation will not be 
+    ///              displayed to avoid interfering with 
+    ///              the verbose output
     ///
     /// # Returns
-    /// * `Self` - A new ProgressAnimation instance
+    /// * `Self`: A new ProgressAnimation instance
     pub fn new(verbose: bool) -> Self {
         Self {
             running: Arc::new(AtomicBool::new(false)),
@@ -30,7 +35,9 @@ impl ProgressAnimation {
     /// Starts the progress animation if not in verbose mode.
     ///
     /// # Returns
-    /// * `Option<JoinHandle<()>>` - A handle to the animation task if started, None if verbose mode
+    /// * `Option<JoinHandle<()>>`: A handle to the animation 
+    ///                             task if started, None if 
+    ///                             in verbose mode.
     ///
     /// # Example
     /// ```
@@ -55,7 +62,8 @@ impl ProgressAnimation {
     /// Stops the progress animation and cleans up the display.
     ///
     /// # Arguments
-    /// * `handle` - The animation task handle returned from `start()`
+    /// * `handle`: The animation task handle 
+    ///             returned from `start()`
     ///
     /// # Example
     /// ```
@@ -79,13 +87,16 @@ impl ProgressAnimation {
     }
 }
 
-/// Shows a simple spinning animation while a long-running operation is in progress.
+/// Shows a simple spinning animation while a 
+/// long-running operation is in progress.
 /// 
-/// The animation cycles through different characters to create a spinning effect:
+/// The animation cycles through different 
+/// characters to create a spinning effect:
 /// | / — \
 ///
 /// # Arguments
-/// * `running` - An atomic boolean that controls when the animation should stop
+/// * `running`: An atomic boolean that controls 
+///              when the animation should stop
 async fn show_progress_animation(running: Arc<AtomicBool>) {
     let mut timer = interval(Duration::from_millis(250));
     let dots_patterns: [&'static str; 4] = ["|", "/", "—", "\\"];
@@ -107,10 +118,10 @@ async fn show_progress_animation(running: Arc<AtomicBool>) {
 /// Formats a number with comma separators for better readability.
 ///
 /// # Arguments
-/// * `num` - The number to format
+/// * `num`: The number to format
 ///
 /// # Returns
-/// * `String` - The formatted number with comma separators
+/// * `String`: The formatted number with comma separators
 ///
 /// # Example
 /// ```

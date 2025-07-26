@@ -1,6 +1,5 @@
 mod config;
 mod util;
-mod error;
 mod display;
 mod commands;
 
@@ -32,8 +31,8 @@ use ironshield::{
     IronShieldClient,
     ClientConfig,
 };
+use ironshield::error::ErrorHandler;
 use crate::config::ConfigManager;
-use crate::error::CliError;
 
 #[tokio::main]
 async fn main() -> Result<()> {
@@ -181,7 +180,7 @@ pub enum Commands {
 }
 
 impl CliArgs {
-    pub fn parse() -> Result<Self, CliError> {
+    pub fn parse() -> Result<Self, ErrorHandler> {
         Ok(Parser::parse())
     }
 }
