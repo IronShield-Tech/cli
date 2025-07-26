@@ -233,6 +233,7 @@ jobs:
 
       # Set version from bump job output
       - name: Set Version
+        shell: bash
         run: |
           VERSION=${{ needs.bump.outputs.new_version }}
           echo "VERSION=$VERSION" >> $GITHUB_ENV
@@ -240,6 +241,7 @@ jobs:
 
       # Build the binary for the specific target
       - name: Build Release Binary
+        shell: bash
         run: |
           echo "Building release binary for ${{ matrix.target }}..."
           cargo build --release --target ${{ matrix.target }} --all-features
@@ -247,6 +249,7 @@ jobs:
 
       # Create release archive
       - name: Create Release Archive
+        shell: bash
         run: |
           mkdir -p release-temp
           
