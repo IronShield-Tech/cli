@@ -205,6 +205,12 @@ jobs:
           - target: aarch64-apple-darwin
             os: macos-latest
             name: aarch64-apple-darwin
+          - target: x86_64-pc-windows-gnu
+            os: ubuntu-latest
+            name: x86_64-windows
+          - target: aarch64-pc-windows-msvc
+            os: windows-latest
+            name: aarch64-windows
     
     steps:
       # Checkout the repository at the new tag
