@@ -219,6 +219,13 @@ jobs:
         with:
           ref: v${{ needs.bump.outputs.new_version }}
 
+      # Install MinGW for Windows cross-compilation on Ubuntu
+      - name: Install MinGW
+        if: matrix.target == 'x86_64-pc-windows-gnu'
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y gcc-mingw-w64-x86-64
+
       # Setup Rust with the target
       - name: Setup Rust
         uses: dtolnay/rust-toolchain@stable
