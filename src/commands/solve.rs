@@ -1,10 +1,10 @@
 use ironshield::{
-    IronShieldClient, 
-    solve_challenge, 
-    ClientConfig, 
-    IronShieldChallenge, 
-    IronShieldChallengeResponse, 
-    SolveConfig, 
+    IronShieldClient,
+    solve_challenge,
+    ClientConfig,
+    IronShieldChallenge,
+    IronShieldChallengeResponse,
+    SolveConfig,
     ProgressTracker,
     error::ErrorHandler
 };
@@ -34,15 +34,15 @@ impl ProgressTracker for VerboseProgressTracker {
     fn on_progress(&self, thread_id: usize, total_attempts: u64, hash_rate: u64, _elapsed: std::time::Duration) {
         let mut last_logged_map = self.last_logged.lock().unwrap();
         let last_logged_attempts = last_logged_map.get(&thread_id).copied().unwrap_or(0);
-        
+
         // Only log every 500,000 attempts to avoid spam
         if total_attempts - last_logged_attempts >= 500_000 {
             // Calculate estimated total attempts across all threads
             let estimated_total_attempts = total_attempts * self.thread_count as u64;
             let estimated_total_hash_rate = hash_rate * self.thread_count as u64;
-            
-            println!("COMPUTE: Total progress: {} total attempts across all threads ({} hashes/second)", 
-                format_number_with_commas(estimated_total_attempts), 
+
+            println!("COMPUTE: Total progress: {} total attempts across all threads ({} hashes/second)",
+                format_number_with_commas(estimated_total_attempts),
                 format_number_with_commas(estimated_total_hash_rate)
             );
             last_logged_map.insert(thread_id, total_attempts);
@@ -88,7 +88,7 @@ pub async fn solve_challenge_with_display(
         Some(tokio::spawn(async move {
             let mut interval = tokio::time::interval(tokio::time::Duration::from_secs(2));
             interval.tick().await; // Skip the first immediate tick
-            
+
             let mut iteration = 1;
             loop {
                 interval.tick().await;
@@ -114,9 +114,9 @@ pub async fn solve_challenge_with_display(
     } else {
         None
     };
-    
+
     let result = solve_challenge(challenge, config, use_multithreaded, progress_tracker).await;
-    
+
     if let Some(handle) = verbose_progress_handle {
         handle.abort();
     }
@@ -133,7 +133,7 @@ pub async fn solve_challenge_with_display(
             } else {
                 crate::verbose_log!(config, success, "Single-threaded solve completed successfully");
             }
-            
+
             println!("Challenge solved successfully!");
         },
         Err(e) => {
@@ -192,9 +192,9 @@ fn log_solution_performance(
 
 /// Handles the solve command - fetches and solves a challenge from the specified endpoint
 pub async fn handle_solve(
-    client: &IronShieldClient, 
+    client: &IronShieldClient,
     config: &ClientConfig,
-    endpoint: &str, 
+    endpoint: &str,
     single_threaded: bool
 ) -> color_eyre::Result<()> {
     crate::verbose_section!(config, "Challenge Fetching");
@@ -216,10 +216,10 @@ pub async fn handle_solve(
     crate::verbose_kv!(config, "Difficulty", challenge.recommended_attempts / 2);
     crate::verbose_kv!(config, "Recommended Attempts", challenge.recommended_attempts);
 
-    // invert single_threaded flag to get use_multithreaded.
+    // Invert the single_threaded flag to get use_multithreaded.
     let solution = solve_challenge_with_display(challenge, config, !single_threaded).await?;
 
     println!("Solution: {solution:?}");
 
     std::process::exit(0);
-} 
+}

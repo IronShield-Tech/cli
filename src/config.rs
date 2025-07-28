@@ -5,46 +5,21 @@ pub struct ConfigManager;
 
 #[allow(dead_code)]
 impl ConfigManager {
-    /// Saves the current configuration to a TOML file.
-    ///
+    /// Loads and saved a default configuration file
+    /// as `ironshield.toml` in the specified path.
+    /// 
     /// # Arguments
-    /// * `config`: The configuration to save.
-    /// * `path`:   Path to the configuration file save location.
-    ///
+    /// * `path`: The path where the default configuration 
+    ///           file should be created.
+    /// 
     /// # Returns
-    /// * `Result<(), ErrorHandler>`: Indication of success or failure.
-    ///
-    /// # Example
-    /// ```
-    /// use ironshield::ClientConfig;
-    /// use ironshield_cli::config::ConfigManager;
-    ///
-    /// let config = ClientConfig::default();
-    /// ConfigManager::save_to_file(&config, "ironshield.toml")?;
-    /// # Ok::<(), Box<dyn std::error::Error>>(())
-    /// ```
-    pub fn save_to_file(config: &ClientConfig, path: &str) -> Result<(), ErrorHandler> {
-        config.validate()
-              .map_err(|e| ErrorHandler::config_error(
-                  format!("Cannot save invalid configuration: {e}")
-              ))?;
-
-        let content = toml::to_string_pretty(config)
-            .map_err(|e| ErrorHandler::config_error(
-                format!("Failed to serialize config to TOML: {e}")
-            ))?;
-
-        std::fs::write(path, content)
-            .map_err(ErrorHandler::Io)?;
-
-        Ok(())
-    }
-
+    /// * `Result<ClientConfig, ErrorHandler>`: The default configuration
+    ///                                         created or an error if it fails.
     pub fn create_default_config(
         path: &str
     ) -> Result<ClientConfig, ErrorHandler> {
         let config = ClientConfig::default();
-        Self::save_to_file(&config, path)?;
+        ClientConfig::save_to_file(&config, path)?;
 
         println!("Created default configuration file at '{path}'");
         Ok(config)
@@ -98,7 +73,7 @@ impl ConfigManager {
     /// # Ok::<(), Box<dyn std::error::Error>>(())
     /// ```
     pub fn load_with_overrides(
-        path: Option<String>,
+        path:             Option<String>,
         verbose_override: Option<bool>,
     ) -> Result<ClientConfig, ErrorHandler> {
         let mut config = match path {
@@ -198,7 +173,7 @@ mod tests {
 
         let config = ConfigManager::create_default_config(file_path_str).unwrap();
 
-        // Verify file was created and is valid.
+        // Verify the file was created and is valid.
         assert!(file_path.exists());
         let loaded_config = ClientConfig::from_file(file_path_str).unwrap();
         assert_eq!(config.api_base_url, loaded_config.api_base_url);
@@ -209,10 +184,10 @@ mod tests {
         let dir = tempdir().unwrap();
         let file_path = dir.path().join("valid_config.toml");
         let file_path_str = file_path.to_str().unwrap();
-
-        // Create valid configuration file.
+        
+        // Create a valid configuration file.
         let config = ClientConfig::default();
-        ConfigManager::save_to_file(&config, file_path_str).unwrap();
+        ClientConfig::save_to_file(&config, file_path_str).unwrap();
 
         // Validation should succeed.
         let result = ConfigManager::validate_config_file(file_path_str);
