@@ -31,8 +31,8 @@ use ironshield::{
     IronShieldClient,
     ClientConfig,
 };
-use ironshield::error::ErrorHandler;
-use crate::config::ConfigManager;
+
+use ironshield::handler::error::ErrorHandler;
 
 #[tokio::main]
 async fn main() -> Result<()> {
@@ -40,20 +40,36 @@ async fn main() -> Result<()> {
 
     let args: CliArgs = CliArgs::parse()?;
 
-    let (config_path, verbose_override) = match &args.command {
+    let client = IronShieldClient::new(ClientConfig::default())
+        .map_err(|e| ErrorHandler::config_error(format!("Failed to initialize client: {}", e)))?;
+
+    // Extract config path and verbose from both global and subcommand arguments.
+    let (subcommand_config_path, verbose_override) = match &args.command {
         Commands::Fetch { config_path, verbose, .. }    => (config_path.clone(), Some(*verbose || args.verbose)),
         Commands::Solve { config_path, verbose, .. }    => (config_path.clone(), Some(*verbose || args.verbose)),
         Commands::Validate { config_path, verbose, .. } => (config_path.clone(), Some(*verbose || args.verbose)),
     };
 
-    // Load configuration with CLI overrides using the new ConfigManager.
-    let config: ClientConfig = ConfigManager::load_with_overrides(
-        config_path,
-        verbose_override,
-    )?;
+    let final_config_path = subcommand_config_path.or(args.config_path);
+
+    let mut config: ClientConfig = match final_config_path {
+        Some(config_path) => {
+            println!("Loading configuration from: {}", config_path);
+            ClientConfig::from_file(&config_path)
+                .map_err(|e| ErrorHandler::config_error(format!("Failed to load config from '{}': {}", config_path, e)))?
+        }
+        None => {
+            println!("No config file specified, using default configuration.");
+            ClientConfig::default()
+        }
+    };
+
+    // Apply verbose override if specified.
+    if let Some(verbose) = verbose_override {
+        config.set_verbose(verbose);
+    }
 
     verbose_section!(config, "Client Initialization");
-    let client: IronShieldClient = IronShieldClient::new(config.clone())?;
     verbose_log!(config, success, "Client initialized successfully.");
 
     match args.command {
@@ -90,7 +106,6 @@ pub struct CliArgs {
     #[arg(
         short,
         long,
-//      default_value = "ironshield.toml",
         help = "Path to the configuration file."
     )]
     pub config_path: Option<String>,
@@ -131,6 +146,8 @@ pub enum Commands {
         )]
         config_path: Option<String>,
     },
+
+    /// Solves an IronShield challenge for a given endpoint.
     Solve {
         /// The protected endpoint URL to solve for.
         endpoint: String,

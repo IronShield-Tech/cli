@@ -1,5 +1,5 @@
 use ironshield::ClientConfig;
-use ironshield::error::ErrorHandler;
+use ironshield::handler::error::ErrorHandler;
 
 pub struct ConfigManager;
 

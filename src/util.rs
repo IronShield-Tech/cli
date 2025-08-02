@@ -128,7 +128,7 @@ macro_rules! verbose_section {
 
 #[cfg(test)]
 mod tests {
-    use ironshield::config::ClientConfig;
+    use ironshield::client::config::ClientConfig;
     use ironshield::USER_AGENT;
 
     #[test]

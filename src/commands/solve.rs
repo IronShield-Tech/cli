@@ -1,15 +1,19 @@
 use ironshield::{
-    IronShieldClient,
-    solve_challenge,
     ClientConfig,
-    IronShieldChallenge,
-    IronShieldChallengeResponse,
-    SolveConfig,
+    IronShieldClient, 
+    IronShieldChallenge, 
+    IronShieldChallengeResponse, 
+    SolveConfig, 
     ProgressTracker,
-    error::ErrorHandler
+    solve_challenge,
 };
 
-use crate::display::{ProgressAnimation, format_number_with_commas};
+use ironshield::handler::error::ErrorHandler;
+
+use crate::display::{
+    ProgressAnimation, 
+    format_number_with_commas
+};
 
 use std::time::Instant;
 use std::sync::{Arc, Mutex};
@@ -52,8 +56,8 @@ impl ProgressTracker for VerboseProgressTracker {
 
 /// CLI wrapper around the library's solve_challenge function that adds display logic
 pub async fn solve_challenge_with_display(
-    challenge: IronShieldChallenge,
-    config: &ClientConfig,
+    challenge:         IronShieldChallenge,
+    config:            &ClientConfig,
     use_multithreaded: bool,
 ) -> Result<IronShieldChallengeResponse, ErrorHandler> {
     // Log configuration details
