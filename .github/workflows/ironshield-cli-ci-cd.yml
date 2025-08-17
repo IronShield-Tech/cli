@@ -93,7 +93,13 @@ jobs:
         shell: bash
         run: |
           # Remove path dependencies, keeping only version dependencies
-          sed -i 's/, path = "[^"]*"//g' Cargo.toml
+          if [[ "$OSTYPE" == "darwin"* ]]; then
+            # macOS (BSD sed) requires empty extension parameter
+            sed -i '' 's/, path = "[^"]*"//g' Cargo.toml
+          else
+            # Linux (GNU sed) uses different syntax
+            sed -i 's/, path = "[^"]*"//g' Cargo.toml
+          fi
           echo "Modified Cargo.toml for CI:"
           cat Cargo.toml
 
@@ -282,7 +288,13 @@ jobs:
         shell: bash
         run: |
           # Remove path dependencies, keeping only version dependencies
-          sed -i 's/, path = "[^"]*"//g' Cargo.toml
+          if [[ "$OSTYPE" == "darwin"* ]]; then
+            # macOS (BSD sed) requires empty extension parameter
+            sed -i '' 's/, path = "[^"]*"//g' Cargo.toml
+          else
+            # Linux (GNU sed) uses different syntax
+            sed -i 's/, path = "[^"]*"//g' Cargo.toml
+          fi
           echo "Modified Cargo.toml for CI:"
           cat Cargo.toml
 
