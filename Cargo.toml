@@ -8,7 +8,9 @@ keywords = ["proof-of-work", "pow", "ddos", "cli", "crypto"]
 readme = "README-crates.md"
 categories = ["cryptography", "algorithms", "concurrency"]
 license = "Apache-2.0"
-edition = "2021"
+edition = "2024"
+
+[workspace]
 
 [[bin]]
 name = "ironshield"
