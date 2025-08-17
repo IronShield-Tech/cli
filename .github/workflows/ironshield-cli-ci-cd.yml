@@ -35,6 +35,16 @@ jobs:
           components: clippy
       - name: Cache Cargo dependencies
         uses: Swatinem/rust-cache@v2
+      
+      # Strip path dependencies for CI (use only version dependencies)
+      - name: Prepare Cargo.toml for CI
+        shell: bash
+        run: |
+          # Remove path dependencies, keeping only version dependencies
+          sed -i 's/, path = "[^"]*"//g' Cargo.toml
+          echo "Modified Cargo.toml for CI:"
+          cat Cargo.toml
+
       - name: Run clippy action
         uses: clechasseur/rs-clippy-check@v4
   doc:
@@ -49,6 +59,16 @@ jobs:
         uses: dtolnay/rust-toolchain@nightly
       - name: Cache Cargo dependencies
         uses: Swatinem/rust-cache@v2
+      
+      # Strip path dependencies for CI (use only version dependencies)
+      - name: Prepare Cargo.toml for CI
+        shell: bash
+        run: |
+          # Remove path dependencies, keeping only version dependencies
+          sed -i 's/, path = "[^"]*"//g' Cargo.toml
+          echo "Modified Cargo.toml for CI:"
+          cat Cargo.toml
+      
       - name: Run cargo doc
         run: cargo doc --no-deps --all-features
         env:
@@ -67,6 +87,15 @@ jobs:
 
       - name: Cache Cargo dependencies
         uses: Swatinem/rust-cache@v2
+      
+      # Strip path dependencies for CI (use only version dependencies)
+      - name: Prepare Cargo.toml for CI
+        shell: bash
+        run: |
+          # Remove path dependencies, keeping only version dependencies
+          sed -i 's/, path = "[^"]*"//g' Cargo.toml
+          echo "Modified Cargo.toml for CI:"
+          cat Cargo.toml
 
       - name: Cargo test all features
         run: cargo test --all-features --all-targets
@@ -146,13 +175,6 @@ jobs:
           git add Cargo.toml
           git commit -m "chore: bump version to ${{ env.NEW_VERSION }} [skip ci]"
           git push origin main
-
-      # Build and verify the package before tagging
-      - name: Build Package
-        run: |
-          echo "Building package v${{ env.NEW_VERSION }}..."
-          cargo build --release
-          echo "Build completed successfully!"
 
       # Create and push a tag 
       - name: Create Git Tag
@@ -254,6 +276,15 @@ jobs:
           VERSION=${{ needs.bump.outputs.new_version }}
           echo "VERSION=$VERSION" >> $GITHUB_ENV
           echo "Building release for version: $VERSION on target: ${{ matrix.target }}"
+      
+      # Strip path dependencies for CI (use only version dependencies)
+      - name: Prepare Cargo.toml for CI
+        shell: bash
+        run: |
+          # Remove path dependencies, keeping only version dependencies
+          sed -i 's/, path = "[^"]*"//g' Cargo.toml
+          echo "Modified Cargo.toml for CI:"
+          cat Cargo.toml
 
       # Build the binary for the specific target
       - name: Build Release Binary
