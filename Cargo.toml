@@ -10,8 +10,6 @@ categories = ["cryptography", "algorithms", "concurrency"]
 license = "Apache-2.0"
 edition = "2024"
 
-[workspace]
-
 [[bin]]
 name = "ironshield"
 path = "src/main.rs"
@@ -21,9 +19,9 @@ default = ["parallel"]
 parallel = ["ironshield-core/parallel"]
 
 [dependencies]
-ironshield = { version = "0.2.14", features = ["parallel", "toml"] }
-ironshield-core = { version = "0.3", features = ["parallel"] }
-ironshield-types = { version = "0.2" }
+ironshield = { version = "0.2", path = "../ironshield-rs", features = ["parallel", "toml"] }
+ironshield-core = { version = "0.3", path = "../ironshield-core", features = ["parallel"] }
+ironshield-types = { version = "0.2", path = "../ironshield-types" }
 color-eyre = "0.6.3"
 crossterm = { version = "0.29.0", features = ["event-stream"] }
 futures = "0.3.31"
