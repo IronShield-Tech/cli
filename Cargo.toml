@@ -1,6 +1,6 @@
 [package]
 name = "ironshield-cli"
-version = "0.2.29"
+version = "0.2.30"
 description = "IronShield CLI component"
 authors = ["IronShield Developers <software@ironshield.cloud>"]
 respository = "https://github.com/IronShield-Tech/cli"
