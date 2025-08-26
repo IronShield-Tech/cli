@@ -15,12 +15,10 @@ name = "ironshield"
 path = "src/main.rs"
 
 [features]
-default = ["parallel"]
-parallel = ["ironshield-core/parallel"]
 
 [dependencies]
-ironshield = { version = "0.2", path = "../ironshield-rs", features = ["parallel", "toml"] }
-ironshield-core = { version = "0.3", path = "../core", features = ["parallel"] }
+ironshield = { version = "0.2", path = "../ironshield-rs", features = [ "toml"] }
+ironshield-core = { version = "0.3", path = "../core" }
 ironshield-types = { version = "0.2", path = "../types" }
 color-eyre = "0.6.3"
 crossterm = { version = "0.29.0", features = ["event-stream"] }
